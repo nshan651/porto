@@ -1,24 +1,40 @@
-#+title: Minimum Viable (Development) Container
+#+title: Minimum Viable Container
 #+author: nshan651
 #+startup: inlineimages
 
-* Container
+My Mimimum Viable (Development) Container. These are all the tools I need to be productive, all within a portable Apline Linux image.
+
+* Basic Dependencies
 
 #+begin_src dockerfile :tangle "Dockerfile"
 # Use a minimal Alpine Linux image as the base
 FROM alpine:latest
 
 # Set the working directory
-WORKDIR /home/dev
+WORKDIR /home/nick
 
-# Install basic dependencies
+# Install base dependencies
 RUN apk --update --no-cache add \
     build-base \
+    curl \
     gcc \
     git \
     musl-dev
+#+end_src
 
-# Install basic development tools
+* Setup User and $HOME
+
+#+begin_src dockerfile :tangle "Dockerfile"
+# Create a new user
+RUN locale-gen en_US.UTF-8 && \
+    adduser --quiet --disabled-password --shell /bin/zsh --home /home/nick --gecos "User" nick && \
+    echo "nick:p@ssword1" | chpasswd &&  usermod -aG sudo nick
+#+end_src
+
+* Development Tools
+Now we're going to want a shell, a text editor, and maybe some other useful CLI programs. Pick your favorites.
+#+begin_src dockerfile :tangle "Dockerfile"
+# Some basic development tools
 RUN apk --update --no-cache add \
     zsh \
     bash \
@@ -27,25 +43,39 @@ RUN apk --update --no-cache add \
     tmux \
     lf \
     ripgrep
+#+end_src
 
+* Graphical Environment
+I mostly use the terminal, but I personally like having the option to enter a grapical environment.
+
+* Programming Languages
+Time to install some programming languages!
+#+begin_src dockerfile :tangle "Dockerfile"
 # Install programming languages
 RUN apk --update --no-cache add \
     python \
-    common-lisp \
-    rust
-    tmux
+    sbcl \
+    rust \
+#+end_src
 
+* Custom Configuration
+Now for the most subjective part, the config.
+
+#+begin_src dockerfile :tangle "Dockerfile"
 # Custom configuration
-# I personally use DWM for a comfy window management experience
 RUN git clone https:/github.com/nshan651/dwm.git \
     git clone https://github.com/nshan651/dwmblocks.git \
     git clone https://github.com/nshan651/st.git \
     git clone https://github.com/nshan651/dotfiles.git
+#+end_src
 
+* Cleanup
+Once we're done setting everything up, we'll clean up
 
+#+begin_src dockerfile :tangle "Dockerfile"
 # Clean up package cache to reduce image size
 RUN rm -rf /var/cache/apk/*
 
-# Entry point for the container
-CMD ["/bin/sh"]
+# Entry point
+CMD ["/bin/zsh"]
 #+end_src
