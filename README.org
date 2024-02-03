@@ -4,6 +4,7 @@
 
 My Mimimum Viable (Development) Container. These are all the tools I need to be productive, all within a portable Apline Linux image.
 [[./green.png]]
+
 This is a "literate config," which means everything here in =README.org= is written to a Dockerfile using [[https://orgmode.org/manual/Extracting-Source-Code.html#Functions-1][org-babel-tangle]].
 
 * Basic Dependencies
@@ -13,7 +14,7 @@ This is a "literate config," which means everything here in =README.org= is writ
 FROM alpine:latest
 
 # Set the working directory
-WORKDIR /home/nick
+WORKDIR /home/cabin
 
 # Install base dependencies
 RUN apk --update --no-cache add \
@@ -29,8 +30,8 @@ RUN apk --update --no-cache add \
 #+begin_src dockerfile :tangle "Dockerfile"
 # Create a new user
 RUN locale-gen en_US.UTF-8 && \
-    adduser --quiet --disabled-password --shell /bin/zsh --home /home/nick --gecos "User" nick && \
-    echo "nick:p@ssword1" | chpasswd &&  usermod -aG sudo nick
+    adduser --quiet --disabled-password --shell /bin/zsh --home /home/cabin --gecos "User" cabin && \
+    echo "cabin:p@ssword1" | chpasswd &&  usermod -aG sudo cabin
 #+end_src
 
 * Development Tools
@@ -47,8 +48,31 @@ RUN apk --update --no-cache add \
     ripgrep
 #+end_src
 
-* Graphical Environment
-I mostly use the terminal, but I personally like having the option to enter a grapical environment.
+* Terminal Emulator and Window Manager
+#+begin_src dockerfile :tangle "Dockerfile"
+# Install dwm for a cozy window manager environment
+RUN git clone https:/github.com/nshan651/dwm.git && \
+         cd dwm && \
+         make && make install
+
+# dwmblocks for useful status blocks
+RUN git clone https://github.com/nshan651/dwmblocks.git \
+         cd dwmblocks && \
+         make && make install
+
+# st is a nice and simple terminal emulator
+RUN git clone https://github.com/nshan651/st.git \
+         cd st && \
+         make && make install
+#+end_src
+
+* GUI Programs
+I personally like having a grapical environment, especially for web browsing. Feel free to exclude this section if you want to go headless.
+#+begin_src dockerfile :tangle "Dockerfile"
+RUN apk --update --no-cache add \
+    firefox \
+    pcmanfm
+#+end_src
 
 * Programming Languages
 Time to install some programming languages!
@@ -57,7 +81,7 @@ Time to install some programming languages!
 RUN apk --update --no-cache add \
     python \
     sbcl \
-    rust \
+    rust
 #+end_src
 
 * Custom Configuration
@@ -65,10 +89,7 @@ Now for the most subjective part, the config.
 
 #+begin_src dockerfile :tangle "Dockerfile"
 # Custom configuration
-RUN git clone https:/github.com/nshan651/dwm.git \
-    git clone https://github.com/nshan651/dwmblocks.git \
-    git clone https://github.com/nshan651/st.git \
-    git clone https://github.com/nshan651/dotfiles.git
+RUN git clone https://github.com/nshan651/dotfiles.git
 #+end_src
 
 * Cleanup

@@ -1,7 +1,10 @@
-all: build
+all: build run
 
 build:
-	docker build --rm -f Dockerfile -t alpine:cabin .
+	podman build -f Dockerfile -t cabin .
 
 run:
-	docker run --rm -it alpine:cabin
+	podman run -it cabin
+
+clean:
+	podman rmi cabin
