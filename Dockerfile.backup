@@ -2,7 +2,7 @@
 FROM alpine:latest
 
 # Set the working directory
-WORKDIR /home/porto
+WORKDIR /home/cabin
 
 # Install base dependencies
 RUN apk --update --no-cache add \
@@ -14,8 +14,8 @@ RUN apk --update --no-cache add \
 
 # Create a new user
 RUN locale-gen en_US.UTF-8 && \
-    adduser --quiet --disabled-password --shell /bin/zsh --home /home/porto --gecos "User" porto && \
-    echo "porto:p@ssword1" | chpasswd &&  usermod -aG sudo porto
+    adduser --quiet --disabled-password --shell /bin/zsh --home /home/cabin --gecos "User" cabin && \
+    echo "cabin:p@ssword1" | chpasswd &&  usermod -aG sudo cabin
 
 # Some basic development tools
 RUN apk --update --no-cache add \

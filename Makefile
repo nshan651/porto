@@ -1,10 +1,10 @@
 all: build run
 
 build:
-	podman build -f Dockerfile -t cabin .
+	podman build -f Dockerfile -t porto .
 
 run:
-	podman run -it cabin
+	podman run -it porto
 
 clean:
-	podman rmi cabin
+	podman rmi porto

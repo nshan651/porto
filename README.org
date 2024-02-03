@@ -1,9 +1,11 @@
-#+title: Cabin
+#+title: Porto
 #+author: nshan651
 #+startup: inlineimages
 
 My Mimimum Viable (Development) Container. These are all the tools I need to be productive, all within a portable Apline Linux image.
-[[./green.png]]
+
+#+CAPTION: Sunset on Porto, Portugal.
+[[./porto-1.png]]
 
 This is a "literate config," which means everything here in =README.org= is written to a Dockerfile using [[https://orgmode.org/manual/Extracting-Source-Code.html#Functions-1][org-babel-tangle]].
 
@@ -14,7 +16,7 @@ This is a "literate config," which means everything here in =README.org= is writ
 FROM alpine:latest
 
 # Set the working directory
-WORKDIR /home/cabin
+WORKDIR /home/porto
 
 # Install base dependencies
 RUN apk --update --no-cache add \
@@ -30,8 +32,8 @@ RUN apk --update --no-cache add \
 #+begin_src dockerfile :tangle "Dockerfile"
 # Create a new user
 RUN locale-gen en_US.UTF-8 && \
-    adduser --quiet --disabled-password --shell /bin/zsh --home /home/cabin --gecos "User" cabin && \
-    echo "cabin:p@ssword1" | chpasswd &&  usermod -aG sudo cabin
+    adduser --quiet --disabled-password --shell /bin/zsh --home /home/porto --gecos "User" porto && \
+    echo "porto:p@ssword1" | chpasswd &&  usermod -aG sudo porto
 #+end_src
 
 * Development Tools
