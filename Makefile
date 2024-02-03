@@ -7,4 +7,4 @@ run:
 	podman run -it porto
 
 clean:
-	podman rmi porto
+	podman rm -if porto; podman rmi -if porto

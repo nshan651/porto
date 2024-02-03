@@ -2,96 +2,187 @@
 #+author: nshan651
 #+startup: inlineimages
 
-My Mimimum Viable (Development) Container. These are all the tools I need to be productive, all within a portable Apline Linux image.
+My portable development container. These are all the tools I need to be productive, all within a portable Apline Linux image.
 
-#+CAPTION: Sunset on Porto, Portugal.
-[[./porto-1.png]]
+#+caption: Sunset on Porto, Portugal.
+[[./porto.png]]
 
 This is a "literate config," which means everything here in =README.org= is written to a Dockerfile using [[https://orgmode.org/manual/Extracting-Source-Code.html#Functions-1][org-babel-tangle]].
 
-* Basic Dependencies
+* Initial Setup
+
+** Init
 
 #+begin_src dockerfile :tangle "Dockerfile"
 # Use a minimal Alpine Linux image as the base
 FROM alpine:latest
 
-# Set the working directory
-WORKDIR /home/porto
+# Set custom args
+ARG USERNAME=porto \
+    INSTALL="apk --update --no-cache add"
 
+# Set the working directory
+WORKDIR /home/$USERNAME
+#+end_src
+
+** Base Dependencies
+
+#+begin_src dockerfile :tangle "Dockerfile"
 # Install base dependencies
-RUN apk --update --no-cache add \
+RUN $INSTALL \
     build-base \
     curl \
     gcc \
     git \
-    musl-dev
+    musl-dev \
+    musl-locales \
+    openssl \
+    tzdata
 #+end_src
 
-* Setup User and $HOME
+** Locale
 
 #+begin_src dockerfile :tangle "Dockerfile"
-# Create a new user
-RUN locale-gen en_US.UTF-8 && \
-    adduser --quiet --disabled-password --shell /bin/zsh --home /home/porto --gecos "User" porto && \
-    echo "porto:p@ssword1" | chpasswd &&  usermod -aG sudo porto
+# Set locale
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US:en
+ENV LC_ALL=en_US.UTF-8
+
+# Set the desired timezone
+ENV TZ=America/Chicago
+#+end_src
+
+* Core
+** Terminal Emulator
+
+#+begin_src dockerfile :tangle "Dockerfile"
+# st is a nice and simple terminal emulator
+RUN git clone https://github.com/nshan651/st.git \
+    cd st && \
+    make && make install
+#+end_src
+
+** Shell
+
+#+begin_src dockerfile :tangle "Dockerfile"
+  RUN $INSTALL bash zsh
+#+end_src
+
+** Window Manager/Desktop Environment
+
+#+begin_src dockerfile :tangle "Dockerfile"
+# Install dwm for a cozy window manager environment
+RUN git clone https:/github.com/nshan651/dwm.git && \
+    cd dwm && \
+    make && make install
+
+# dwmblocks for useful status blocks
+RUN git clone https://github.com/nshan651/dwmblocks.git \
+    cd dwmblocks && \
+    make && make install
+
+# dmenu is an excellent file selector
+RUN $INSTALL dmenu
+#+end_src
+
+** Keybindings
+
+#+begin_src dockerfile :tangle "Dockerfile"
+RUN $INSTALL sxhkd
+#+end_src
+
+** Text Editing
+
+#+begin_src dockerfile :tangle "Dockerfile"
+# Emacs or Vim? Why not both? :D
+RUN $INSTALL emacs neovim
+#+end_src
+
+** Web Browser
+
+#+begin_src dockerfile :tangle "Dockerfile"
+RUN $INSTALL firefox
+#+end_src
+
+* Applications
+** Documents and Spreadsheets
+
+#+begin_src dockerfile :tangle "Dockerfile"
+RUN $INSTALL libreoffice
+#+end_src
+** File Manager
+
+#+begin_src dockerfile :tangle "Dockerfile"
+RUN $INSTALL lf pcmanfm
+#+end_src
+** Image Viewer
+
+#+begin_src dockerfile :tangle "Dockerfile"
+RUN $INSTALL sxiv
+#+end_src
+
+** Image Editing
+** Mail Client
+** Music/Audio Player
+** PDF Viewer
+
+#+begin_src dockerfile :tangle "Dockerfile"
+RUN $INSTALL pandoc zathura
+#+end_src
+** Video
+** RSS Reader
+
+#+begin_src dockerfile :tangle "Dockerfile"
+RUN $INSTALL newsboat
 #+end_src
 
 * Development Tools
 Now we're going to want a shell, a text editor, and maybe some other useful CLI programs. Pick your favorites.
+
+** CLI
 #+begin_src dockerfile :tangle "Dockerfile"
 # Some basic development tools
-RUN apk --update --no-cache add \
-    zsh \
-    bash \
-    neovim \
-    emacs \
+RUN $INSTALL \
+    bc \
+    fzf \
+    gdb \
+    jq \
+    ripgrep \
     tmux \
-    lf \
-    ripgrep
+    tmuxinator \
+    valgrind
 #+end_src
 
-* Terminal Emulator and Window Manager
-#+begin_src dockerfile :tangle "Dockerfile"
-# Install dwm for a cozy window manager environment
-RUN git clone https:/github.com/nshan651/dwm.git && \
-         cd dwm && \
-         make && make install
-
-# dwmblocks for useful status blocks
-RUN git clone https://github.com/nshan651/dwmblocks.git \
-         cd dwmblocks && \
-         make && make install
-
-# st is a nice and simple terminal emulator
-RUN git clone https://github.com/nshan651/st.git \
-         cd st && \
-         make && make install
-#+end_src
-
-* GUI Programs
-I personally like having a grapical environment, especially for web browsing. Feel free to exclude this section if you want to go headless.
-#+begin_src dockerfile :tangle "Dockerfile"
-RUN apk --update --no-cache add \
-    firefox \
-    pcmanfm
-#+end_src
-
-* Programming Languages
+** Programming Languages
 Time to install some programming languages!
-#+begin_src dockerfile :tangle "Dockerfile"
-# Install programming languages
-RUN apk --update --no-cache add \
-    python \
-    sbcl \
-    rust
+#+begin_src dockerfile :tangle no
+  # Install programming languages
+  RUN $INSTALL \
+      python \
+      lua \
+      ruby \
+      rust \
+      sbcl
 #+end_src
 
 * Custom Configuration
 Now for the most subjective part, the config.
 
-#+begin_src dockerfile :tangle "Dockerfile"
+#+begin_src dockerfile :tangle no
 # Custom configuration
 RUN git clone https://github.com/nshan651/dotfiles.git
+#+end_src
+
+* Setup Non-Root User
+One of the last steps is setting up a regular user. I saved this for the end in order to avoid invoking sudo (or doas, on Alpine) every time we install something.
+
+#+begin_src dockerfile :tangle "Dockerfile"
+# Set up a non-root user
+# RUN useradd -m -s /bin/zsh porto
+    # echo "porto ALL=(ALL:ALL) NOPASSWD:ALL" > /etc/sudoers.d/porto
+# Add a non-root user
+RUN adduser -D -u 1000 porto
+USER porto
 #+end_src
 
 * Cleanup

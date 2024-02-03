@@ -1,59 +1,86 @@
 # Use a minimal Alpine Linux image as the base
 FROM alpine:latest
 
+# Set custom args
+ARG USERNAME=porto \
+    INSTALL="apk --update --no-cache add"
+
 # Set the working directory
-WORKDIR /home/porto
+WORKDIR /home/$USERNAME
 
 # Install base dependencies
-RUN apk --update --no-cache add \
+RUN $INSTALL \
     build-base \
     curl \
     gcc \
     git \
-    musl-dev
+    musl-dev \
+    musl-locales \
+    openssl \
+    tzdata
 
-# Create a new user
-RUN locale-gen en_US.UTF-8 && \
-    adduser --quiet --disabled-password --shell /bin/zsh --home /home/porto --gecos "User" porto && \
-    echo "porto:p@ssword1" | chpasswd &&  usermod -aG sudo porto
+# Set locale
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US:en
+ENV LC_ALL=en_US.UTF-8
 
-# Some basic development tools
-RUN apk --update --no-cache add \
-    zsh \
-    bash \
-    neovim \
-    emacs \
-    tmux \
-    lf \
-    ripgrep
-
-# Install dwm for a cozy window manager environment
-RUN git clone https:/github.com/nshan651/dwm.git && \
-         cd dwm && \
-         make && make install
-
-# dwmblocks for useful status blocks
-RUN git clone https://github.com/nshan651/dwmblocks.git \
-         cd dwmblocks && \
-         make && make install
+# Set the desired timezone
+ENV TZ=America/Chicago
 
 # st is a nice and simple terminal emulator
 RUN git clone https://github.com/nshan651/st.git \
-         cd st && \
-         make && make install
+    cd st && \
+    make && make install
 
-RUN apk --update --no-cache add \
-    firefox \
-    pcmanfm
+RUN $INSTALL bash zsh
 
-# Install programming languages
-RUN apk --update --no-cache add \
-    python \
-    sbcl \
-    rust
+# Install dwm for a cozy window manager environment
+RUN git clone https:/github.com/nshan651/dwm.git && \
+    cd dwm && \
+    make && make install
 
-# Custom configuration
-RUN git clone https://github.com/nshan651/dotfiles.git
+# dwmblocks for useful status blocks
+RUN git clone https://github.com/nshan651/dwmblocks.git \
+    cd dwmblocks && \
+    make && make install
+
+# dmenu is an excellent file selector
+RUN $INSTALL dmenu
+
+RUN $INSTALL sxhkd
+
+# Emacs or Vim? Why not both? :D
+RUN $INSTALL emacs neovim
+
+RUN $INSTALL firefox
+
+RUN $INSTALL libreoffice
+
+RUN $INSTALL lf pcmanfm
+
+RUN $INSTALL sxiv
+
+RUN $INSTALL pandoc zathura
+
+RUN $INSTALL newsboat
+
+# Some basic development tools
+RUN $INSTALL \
+    bc \
+    fzf \
+    gdb \
+    jq \
+    ripgrep \
+    tmux \
+    tmuxinator \
+    valgrind
+
+# Set up a non-root user
+# RUN useradd -m -s /bin/zsh porto
+    # echo "porto ALL=(ALL:ALL) NOPASSWD:ALL" > /etc/sudoers.d/porto
+# Add a non-root user
+RUN adduser -D -u 1000 porto
+USER porto
 
 # Clean up package cache to reduce image size
 RUN rm -rf /var/cache/apk/*
