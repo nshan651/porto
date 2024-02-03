@@ -1,8 +1,10 @@
-#+title: Minimum Viable Container
+#+title: Cabin
 #+author: nshan651
 #+startup: inlineimages
 
 My Mimimum Viable (Development) Container. These are all the tools I need to be productive, all within a portable Apline Linux image.
+[[./green.png]]
+This is a "literate config," which means everything here in =README.org= is written to a Dockerfile using [[https://orgmode.org/manual/Extracting-Source-Code.html#Functions-1][org-babel-tangle]].
 
 * Basic Dependencies
 
@@ -70,11 +72,14 @@ RUN git clone https:/github.com/nshan651/dwm.git \
 #+end_src
 
 * Cleanup
-Once we're done setting everything up, we'll clean up
+Once we're done setting everything up, we'll clean up to reduce the image size.
 
 #+begin_src dockerfile :tangle "Dockerfile"
 # Clean up package cache to reduce image size
 RUN rm -rf /var/cache/apk/*
+
+# Remove dotfiles
+# TODO
 
 # Entry point
 CMD ["/bin/zsh"]

@@ -42,5 +42,8 @@ RUN git clone https:/github.com/nshan651/dwm.git \
 # Clean up package cache to reduce image size
 RUN rm -rf /var/cache/apk/*
 
+# Remove dotfiles
+# TODO
+
 # Entry point
 CMD ["/bin/zsh"]
