@@ -1,0 +1,80 @@
+services:
+
+  # Reverse proxy
+  nginx:
+    image: nginx:latest
+    container_name: porto_reverse_proxy
+    restart: always
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt/:/etc/letsencrypt/
+    ports:
+      - 80:80
+      - 443:443
+    networks:
+      - net
+  
+  # Personal website
+  website:
+    image: nginx:latest
+    container_name: porto_website
+    restart: always
+    volumes:
+      - ./site:/usr/share/nginx/html:ro
+    expose:
+      - "80"
+    networks:
+      - net
+
+  # FreshRSS
+  freshrss:
+    image: freshrss/freshrss:latest
+    container_name: porto_rss
+    restart: always
+    expose:
+      - "80"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+    volumes:
+      - freshrss:/var/www/freshrss/data
+    networks:
+      - net
+
+  nextcloud:
+    image: nextcloud:apache
+    container_name: porto_nextcloud
+    restart: always
+    expose:
+      - "80"
+    volumes:
+      - nextcloud:/var/www/html:z
+      # Comment this out before initial setup and admin creation.
+      #- /mnt/media/dox/pix:/var/www/html/data/nshan651/files/Photos:ro
+    environment:
+      - NEXTCLOUD_TRUSTED_DOMAINS=nextcloud.${DOMAIN}
+      - OVERWRITEPROTOCOL=https
+      - OVERWRITEHOST=nextcloud.${DOMAIN}
+    networks:
+      - net
+
+  jellyfin:
+    image: jellyfin/jellyfin
+    container_name: porto_jellyfin
+    read_only: true
+    expose:
+      - "8096"
+      - "80"
+    volumes:
+      - /mnt/media/dox/music:/media/music:ro
+    networks:
+      - net
+
+volumes:
+  nextcloud:
+  freshrss:
+
+networks:
+  net:
+    driver: bridge

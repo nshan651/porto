@@ -1,0 +1,4 @@
+# Ignore ALL env secrets.
+**/*.env
+
+etc/**
