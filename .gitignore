@@ -1,6 +1,8 @@
 # Ignore ALL env secrets.
 **/*.env
 
-etc/**
-data/traefik/**
-data/**
+etc/
+data/
+
+# Git allow.
+!data/freshrss/feed.ompl
