@@ -86,7 +86,7 @@ services:
       - 'traefik.http.routers.website.rule=Host(`${MY_DOMAIN}`)'
       - 'traefik.http.routers.website.entryPoints=websecure'
     volumes:
-      - ./site:/usr/share/nginx/html:ro
+      - /var/www/nshan651.duckdns.org:/usr/share/nginx/html:ro
 
   sonarr:
     container_name: sonarr
