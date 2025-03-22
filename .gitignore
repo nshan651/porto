@@ -1,9 +1,14 @@
 # Ignore ALL env secrets.
 **/*.env
 
+# Ignore certs.
+**/*.pem
+**/*.crt
+**/*.key
+
 etc/
 data/
-config/nextcloud/
+config/
 
 # Git allow.
-!data/freshrss/feed.ompl
+!config/freshrss/feed.ompl

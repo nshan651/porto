@@ -171,17 +171,17 @@ services:
       - /mnt/media/dox/pix:/data/nshan651/files/Photos:ro
 
   freshrss:
-    image: freshrss/freshrss:latest
+    image: linuxserver/freshrss:latest
     container_name: porto_rss
     restart: unless-stopped
     labels:
       - 'traefik.enable=true'
       - 'traefik.http.routers.freshrss.rule=Host(`rss.${MY_DOMAIN}`)'
       - 'traefik.http.routers.freshrss.entryPoints=websecure'
-      - 'traefik.http.routers.freshrss.middlewares=authelia@docker'
+      #- 'traefik.http.routers.freshrss.middlewares=authelia@docker'
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=America/Chicago
     volumes:
-      - ./data/freshrss:/var/www/freshrss/data
+      - ./config/freshrss:/config
