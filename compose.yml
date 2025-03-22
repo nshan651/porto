@@ -159,14 +159,16 @@ services:
       - 'traefik.enable=true'
       - 'traefik.http.routers.nextcloud.rule=Host(`nextcloud.${MY_DOMAIN}`)'
       - 'traefik.http.routers.nextcloud.entryPoints=websecure'
-      - 'traefik.http.routers.nextcloud.middlewares=authelia@docker'
+      #- 'traefik.http.routers.nextcloud.middlewares=authelia@docker'
     environment:
       PUID: '1000'
       PGID: '1000'
       TZ: 'America/Chicago'
     volumes:
-      - ./data/nextcloud:/var/www/html
-      - /mnt/media/dox/pix:/var/www/html/data/nshan651/files/Photos:ro
+      - ./config/nextcloud:/config
+      - ./data/nextcloud:/data
+      #- /mnt/media/dox/pix:/var/www/html/data/nshan651/files/Photos:ro
+      - /mnt/media/dox/pix:/data/nshan651/files/Photos:ro
 
   freshrss:
     image: freshrss/freshrss:latest
@@ -183,10 +185,3 @@ services:
       - TZ=America/Chicago
     volumes:
       - ./data/freshrss:/var/www/freshrss/data
-
-#volumes:
-#  nextcloud:
-
-# networks:
-#   net:
-#     driver: bridge

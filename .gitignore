@@ -3,6 +3,7 @@
 
 etc/
 data/
+config/nextcloud/
 
 # Git allow.
 !data/freshrss/feed.ompl

@@ -12,4 +12,4 @@ secret:
 
 # Reload photos in nextcloud.
 rescan:
-	docker exec -u www-data nextcloud php occ files:scan --all
+	docker exec -u abc nextcloud php /app/www/public/occ files:scan --all
