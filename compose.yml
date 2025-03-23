@@ -167,7 +167,6 @@ services:
     volumes:
       - ./config/nextcloud:/config
       - ./data/nextcloud:/data
-      #- /mnt/media/dox/pix:/var/www/html/data/nshan651/files/Photos:ro
       - /mnt/media/dox/pix:/data/nshan651/files/Photos:ro
 
   freshrss:
@@ -178,10 +177,26 @@ services:
       - 'traefik.enable=true'
       - 'traefik.http.routers.freshrss.rule=Host(`rss.${MY_DOMAIN}`)'
       - 'traefik.http.routers.freshrss.entryPoints=websecure'
-      #- 'traefik.http.routers.freshrss.middlewares=authelia@docker'
+      - 'traefik.http.routers.freshrss.middlewares=authelia@docker'
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=America/Chicago
     volumes:
       - ./config/freshrss:/config
+
+  jellyfin:
+    container_name: jellyfin
+    image: jellyfin/jellyfin:latest
+    restart: unless-stopped
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.jellyfin.rule=Host(`jellyfin.${MY_DOMAIN}`)'
+      - 'traefik.http.routers.jellyfin.entryPoints=websecure'
+    environment:
+      TZ: 'America/Chicago'
+    volumes:
+      - ./data/jellyfin:/config
+      - /mnt/media/dox/movies:/movies
+      - /mnt/media/dox/tv:/tv
+      - /mnt/media/dox/music:/music
