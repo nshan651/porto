@@ -88,6 +88,23 @@ services:
     volumes:
       - /var/www/nshan651.duckdns.org:/usr/share/nginx/html:ro
 
+  syncthing:
+    container_name: syncthing
+    image: linuxserver/syncthing:latest
+    restart: unless-stopped
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.syncthing.rule=Host(`syncthing.${MY_DOMAIN}`)'
+      - 'traefik.http.routers.syncthing.entryPoints=websecure'
+      - 'traefik.http.routers.syncthing.middlewares=authelia@docker'
+    environment:
+      TZ: America/Chicago
+      PUID: 1000
+      PGID: 1000
+    volumes:
+      - ./config/syncthing:/config
+      - /mnt/media/ark:/data1
+
   sonarr:
     container_name: sonarr
     image: linuxserver/sonarr:latest
