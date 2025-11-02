@@ -1,6 +1,43 @@
 ---
 services:
-  proxy:
+
+  # VPN control plane.
+  headscale:
+    image: headscale/headscale:latest
+    container_name: headscale
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./config/headscale:/etc/headscale
+      - ./data/headscale:/var/lib/headscale
+    command: serve
+    # healthcheck:
+    #     test: ["CMD", "headscale", "health"]
+
+  # Subnet router, forwards traffic between Tailscale and private Docker bridge.
+  tailscale-gateway:
+    image: tailscale/tailscale:latest
+    container_name: tailscale-gateway
+    hostname: skywalker
+    network_mode: host
+    # Configure additional capabilities.
+    cap_add:
+      - NET_ADMIN # Needed to create network interfaces.
+      - NET_RAW   # Needed to send raw packets.
+    volumes:
+      - ./data/tailscale/state:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_STATE_DIR=/var/lib/tailscale
+      # - TS_EXTRA_ARGS=--login-server=http://127.0.0.1:8080 --advertise-routes=172.20.0.0/16
+      - TS_EXTRA_ARGS=--login-server=http://127.0.0.1:8080 --advertise-routes=172.20.0.0/16 --accept-dns=false
+      - TS_USERSPACE=false
+    depends_on:
+      - headscale
+    restart: unless-stopped
+
+  traefik:
     image: traefik
     container_name: traefik
     depends_on: 
@@ -66,8 +103,6 @@ services:
     volumes:
       - ./data/authelia:/config
     restart: unless-stopped
-    expose: 
-      - 9091
     environment:
       TZ: America/Chicago
       X_AUTHELIA_CONFIG_FILTERS: template
