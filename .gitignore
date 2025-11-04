@@ -12,4 +12,5 @@ config/
 
 # Git allow.
 !config/freshrss/feed.ompl
+!config/headscale/config.yaml
 !data/authelia/configuration.yml
