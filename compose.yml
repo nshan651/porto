@@ -1,44 +1,109 @@
 ---
 services:
+
+  # VPN Control Plane.
   headscale:
     image: headscale/headscale:latest
     container_name: headscale
     restart: unless-stopped
-    network_mode: host
+    ports:
+      - "8080:8080"
     volumes:
       - ./config/headscale:/etc/headscale
       - ./data/headscale:/var/lib/headscale
     command: serve
+    networks:
+      - headscale
 
   tailscale:
     image: tailscale/tailscale:latest
     container_name: tailscale
-    hostname: tailscale
+    hostname: gateway
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY}
-      - TS_EXTRA_ARGS=--login-server=https://layerseven.duckdns.org --accept-dns=false
+      - TS_EXTRA_ARGS=--login-server=http://layerseven.duckdns.org:8080 --accept-routes
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
     volumes:
       - ./data/tailscale:/var/lib/tailscale
-    devices:
       - /dev/net/tun:/dev/net/tun
     cap_add:
-      - net_admin
-      - sys_module
+      - NET_ADMIN
+      - SYS_MODULE
+    restart: unless-stopped
+    networks:
+      - headscale
+      - services  # Add this so traefik can reach backend services
+    depends_on:
+      - headscale
+
+  traefik:
+    image: traefik
+    container_name: traefik
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=services"  # Tell traefik which network to use
+      - "--entrypoints.web.address=:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    network_mode: service:tailscale
+    depends_on:
+      - tailscale
     restart: unless-stopped
 
   whoami1:
     image: traefik/whoami
     container_name: whoami1
     restart: unless-stopped
-    network_mode: service:tailscale
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.whoami1.rule=Host(`whoami1.gateway.ts.net`)"
+      - "traefik.http.routers.whoami1.entrypoints=web"
+      # - "traefik.http.services.whoami1.loadbalancer.server.port=80"
+    # network_mode: service:tailscale
+    networks:
+      - services
 
   whoami2:
     image: traefik/whoami
     container_name: whoami2
     restart: unless-stopped
-    network_mode: service:tailscale
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.whoami2.rule=Host(`whoami2.gateway.ts.net`)"
+      - "traefik.http.routers.whoami2.entrypoints=web"
+      # - "traefik.http.services.whoami2.loadbalancer.server.port=80"
+    # network_mode: service:tailscale
+    networks:
+      - services
+
+  jellyfin:
+    container_name: jellyfin
+    image: jellyfin/jellyfin:latest
+    restart: unless-stopped
+    environment:
+      TZ: 'America/Chicago'
+    volumes:
+      - ./data/jellyfin:/config
+      - /mnt/media/dox/movies:/movies
+      - /mnt/media/dox/tv:/tv
+      - /mnt/media/dox/music:/music
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.gateway.ts.net`)"
+      - "traefik.http.routers.jellyfin.entrypoints=web"
+      - "traefik.http.services.jellyfin.loadbalancer.server.port=8096"
+    # network_mode: service:tailscale
+    networks:
+      - services
+
+networks:
+  headscale:
+    driver: bridge
+  services:
+    driver: bridge
 
   # traefik:
   #   image: traefik

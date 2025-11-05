@@ -1,7 +1,7 @@
-server_url: https://layerseven.duckdns.org
+# server_url: https://layerseven.duckdns.org
+server_url: http://layerseven.duckdns.org:8080
 
-# listen_addr: 0.0.0.0:8080
-listen_addr: 0.0.0.0:443
+listen_addr: 0.0.0.0:8080
 metrics_listen_addr: 127.0.0.1:9090
 
 grpc_listen_addr: 0.0.0.0:50443
@@ -52,11 +52,17 @@ database:
     path: /var/lib/headscale/db.sqlite
     write_ahead_log: true
 
-tls_letsencrypt: true
-tls_letsencrypt_hostname: "layerseven.duckdns.org"
+
+acme_url: https://acme-v02.api.letsencrypt.org/directory
+acme_email: ""
+
+tls_letsencrypt_hostname: ""
 tls_letsencrypt_cache_dir: /var/lib/headscale/cache
-tls_letsencrypt_challenge_type: HTTP-01
-tls_letsencrypt_listen: ":80"
+# tls_letsencrypt_challenge_type: HTTP-01
+# tls_letsencrypt_listen: ":http"
+
+tls_cert_path: ""
+tls_key_path: ""
 
 log:
   format: text
@@ -71,10 +77,13 @@ dns:
       - 1.1.1.1
       - 8.8.8.8
   extra_records:
-    - name: "whoami1.tailscale.ts.net"
+    - name: "whoami1.gateway.ts.net"
       type: "A"
       value: "100.64.0.3"
-    - name: "whoami2.tailscale.ts.net"
+    - name: "whoami1.gateway.ts.net"
+      type: "A"
+      value: "100.64.0.3"
+    - name: "jellyfin.gateway.ts.net"
       type: "A"
       value: "100.64.0.3"
 
