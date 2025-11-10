@@ -6,7 +6,6 @@
 **/*.crt
 **/*.key
 
-etc/
 data/
 config/
 

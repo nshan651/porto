@@ -7,21 +7,26 @@ services:
     container_name: headscale
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "443:443"
+      - "80:80"
+      - "50443:50443"
     volumes:
       - ./config/headscale:/etc/headscale
       - ./data/headscale:/var/lib/headscale
     command: serve
+    healthcheck:
+        test: ["CMD", "headscale", "health"]
     networks:
-      - headscale
+      - backend
 
+  # Client node.
   tailscale:
     image: tailscale/tailscale:latest
     container_name: tailscale
     hostname: gateway
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY}
-      - TS_EXTRA_ARGS=--login-server=http://layerseven.duckdns.org:8080 --accept-routes
+      - TS_EXTRA_ARGS=--login-server=https://${ENTRYPOINT}:443 --accept-routes
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
     volumes:
@@ -32,8 +37,7 @@ services:
       - SYS_MODULE
     restart: unless-stopped
     networks:
-      - headscale
-      - services  # Add this so traefik can reach backend services
+      - services
     depends_on:
       - headscale
 
@@ -44,7 +48,7 @@ services:
       - "--api.insecure=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.network=services"  # Tell traefik which network to use
+      - "--providers.docker.network=services"
       - "--entrypoints.web.address=:80"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -53,29 +57,57 @@ services:
       - tailscale
     restart: unless-stopped
 
-  whoami1:
-    image: traefik/whoami
-    container_name: whoami1
+  syncthing:
+    container_name: syncthing
+    image: linuxserver/syncthing:latest
     restart: unless-stopped
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.whoami1.rule=Host(`whoami1.gateway.ts.net`)"
-      - "traefik.http.routers.whoami1.entrypoints=web"
-      # - "traefik.http.services.whoami1.loadbalancer.server.port=80"
-    # network_mode: service:tailscale
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.syncthing.rule=Host(`syncthing.${DOMAIN}`)'
+      - 'traefik.http.routers.syncthing.entryPoints=web'
+    environment:
+      TZ: America/Chicago
+      PUID: 1000
+      PGID: 1000
+    volumes:
+      - ./config/syncthing:/config
+      - /mnt/media/ark:/data1
     networks:
       - services
 
-  whoami2:
-    image: traefik/whoami
-    container_name: whoami2
+  nextcloud:
+    container_name: nextcloud
+    image: linuxserver/nextcloud
     restart: unless-stopped
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.whoami2.rule=Host(`whoami2.gateway.ts.net`)"
-      - "traefik.http.routers.whoami2.entrypoints=web"
-      # - "traefik.http.services.whoami2.loadbalancer.server.port=80"
-    # network_mode: service:tailscale
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.nextcloud.rule=Host(`nextcloud.${DOMAIN}`)'
+      - 'traefik.http.routers.nextcloud.entryPoints=web'
+    environment:
+      PUID: '1000'
+      PGID: '1000'
+      TZ: 'America/Chicago'
+    volumes:
+      - ./config/nextcloud:/config
+      - ./data/nextcloud:/data
+      - /mnt/media/dox/pix:/data/nshan651/files/Photos:ro
+    networks:
+      - services
+
+  freshrss:
+    image: linuxserver/freshrss:latest
+    container_name: fresh_rss
+    restart: unless-stopped
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.freshrss.rule=Host(`rss.${DOMAIN}`)'
+      - 'traefik.http.routers.freshrss.entryPoints=web'
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+    volumes:
+      - ./config/freshrss:/config
     networks:
       - services
 
@@ -92,214 +124,13 @@ services:
       - /mnt/media/dox/music:/music
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.gateway.ts.net`)"
+      - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.${DOMAIN}`)"
       - "traefik.http.routers.jellyfin.entrypoints=web"
-      - "traefik.http.services.jellyfin.loadbalancer.server.port=8096"
-    # network_mode: service:tailscale
     networks:
       - services
 
 networks:
-  headscale:
+  backend:
     driver: bridge
   services:
     driver: bridge
-
-  # traefik:
-  #   image: traefik
-  #   container_name: traefik
-  #   restart: unless-stopped
-  #   command:
-  #     - "--log.level=DEBUG"
-  #     - "--providers.docker=true"
-  #     - "--providers.docker.exposedbydefault=false"
-  #     - "--certificatesresolvers.letsencrypt.acme.dnschallenge=true"
-  #     - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=duckdns"
-  #     - "--certificatesresolvers.letsencrypt.acme.email=mail@mail.com"
-  #     - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
-  #   volumes:
-  #     - "./data/traefik/letsencrypt:/letsencrypt"
-  #     - "/var/run/docker.sock:/var/run/docker.sock:ro"
-  #   environment:
-  #     MY_DOMAIN: "${MY_DOMAIN}"
-
-  # authelia_redis:
-  #   image: redis
-  #   restart: unless-stopped
-  #   container_name: authelia_redis
-
-  # authelia_generate_secrets:
-  #   build: generate_secrets
-  #   volumes:
-  #     - ./data/authelia/secrets:/secrets
-
-  # authelia:
-  #   image: authelia/authelia
-  #   container_name: authelia
-  #   labels:
-  #     - 'traefik.enable=true'
-  #     - 'traefik.http.routers.authelia.rule=Host(`auth.${MY_DOMAIN}`)'
-  #     - 'traefik.http.routers.authelia.entryPoints=websecure'
-  #     # CRITICAL: Apply tailnet-only middleware
-  #     - 'traefik.http.routers.authelia.middlewares=tailnet-only@docker'
-  #     - 'traefik.http.middlewares.authelia.forwardAuth.address=http://authelia:9091/api/authz/forward-auth'
-  #     - 'traefik.http.middlewares.authelia.forwardAuth.trustForwardHeader=true'
-  #     - 'traefik.http.middlewares.authelia.forwardAuth.authResponseHeaders=Remote-User,Remote-Groups,Remote-Email,Remote-Name'
-  #   depends_on:
-  #     authelia_generate_secrets:
-  #       condition: service_completed_successfully
-  #   volumes:
-  #     - ./data/authelia:/config
-  #   restart: unless-stopped
-  #   environment:
-  #     TZ: America/Chicago
-  #     X_AUTHELIA_CONFIG_FILTERS: template
-  #     MY_DOMAIN: ${MY_DOMAIN}
-  #     AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET_FILE: /config/secrets/JWT_SECRET
-  #     AUTHELIA_SESSION_SECRET_FILE: /config/secrets/SESSION_SECRET
-  #     AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE: /config/secrets/STORAGE_ENCRYPTION_KEY
-
-  # jellyfin:
-  #   container_name: jellyfin
-  #   image: jellyfin/jellyfin:latest
-  #   restart: unless-stopped
-  #   labels:
-  #     - 'traefik.enable=true'
-  #     - 'traefik.http.routers.jellyfin.rule=Host(`jellyfin.${MY_DOMAIN}`)'
-  #     - 'traefik.http.routers.jellyfin.entryPoints=websecure'
-  #     - 'traefik.http.routers.jellyfin.middlewares=tailnet-only@docker'
-  #   environment:
-  #     TZ: 'America/Chicago'
-  #   volumes:
-  #     - ./data/jellyfin:/config
-  #     - /mnt/media/dox/movies:/movies
-  #     - /mnt/media/dox/tv:/tv
-  #     - /mnt/media/dox/music:/music
-
-  # nextcloud:
-  #   container_name: nextcloud
-  #   image: linuxserver/nextcloud
-  #   restart: unless-stopped
-  #   labels:
-  #     - 'traefik.enable=true'
-  #     - 'traefik.http.routers.nextcloud.rule=Host(`nextcloud.${MY_DOMAIN}`)'
-  #     - 'traefik.http.routers.nextcloud.entryPoints=websecure'
-  #     - 'traefik.http.routers.nextcloud.middlewares=tailnet-only@docker'
-  #     #- 'traefik.http.routers.nextcloud.middlewares=authelia@docker'
-  #   environment:
-  #     PUID: '1000'
-  #     PGID: '1000'
-  #     TZ: 'America/Chicago'
-  #   volumes:
-  #     - ./config/nextcloud:/config
-  #     - ./data/nextcloud:/data
-  #     - /mnt/media/dox/pix:/data/nshan651/files/Photos:ro
-
-  # # Personal website
-  # website:
-  #   image: nginx:latest
-  #   container_name: porto_website
-  #   restart: unless-stopped
-  #   labels:
-  #     - 'traefik.enable=true'
-  #     - 'traefik.http.routers.website.rule=Host(`${MY_DOMAIN}`)'
-  #     - 'traefik.http.routers.website.entryPoints=websecure'
-  #     - 'traefik.http.routers.website.middlewares=tailnet-only@docker'
-  #   volumes:
-  #     - /var/www/nshan651.duckdns.org:/usr/share/nginx/html:ro
-
-  # syncthing:
-  #   container_name: syncthing
-  #   image: linuxserver/syncthing:latest
-  #   restart: unless-stopped
-  #   labels:
-  #     - 'traefik.enable=true'
-  #     - 'traefik.http.routers.syncthing.rule=Host(`syncthing.${MY_DOMAIN}`)'
-  #     - 'traefik.http.routers.syncthing.entryPoints=websecure'
-  #     - 'traefik.http.routers.syncthing.middlewares=authelia@docker'
-  #   environment:
-  #     TZ: America/Chicago
-  #     PUID: 1000
-  #     PGID: 1000
-  #   volumes:
-  #     - ./config/syncthing:/config
-  #     - /mnt/media/ark:/data1
-
-  # sonarr:
-  #   container_name: sonarr
-  #   image: linuxserver/sonarr:latest
-  #   restart: unless-stopped
-  #   labels:
-  #     - 'traefik.enable=true'
-  #     - 'traefik.http.routers.sonarr.rule=Host(`sonarr.${MY_DOMAIN}`)'
-  #     - 'traefik.http.routers.sonarr.entryPoints=websecure'
-  #     - 'traefik.http.routers.sonarr.middlewares=authelia@docker'
-  #   environment:
-  #     TZ: America/Chicago
-  #   volumes:
-  #     - ./data/sonarr:/config
-  #     - /mnt/media/dox/tv:/tv
-  #     - /mnt/media/dl:/downloads
-
-  # radarr:
-  #   container_name: radarr
-  #   image: linuxserver/radarr:latest
-  #   restart: unless-stopped
-  #   labels:
-  #     - 'traefik.enable=true'
-  #     - 'traefik.http.routers.radarr.rule=Host(`radarr.${MY_DOMAIN}`)'
-  #     - 'traefik.http.routers.radarr.entryPoints=websecure'
-  #     - 'traefik.http.routers.radarr.middlewares=authelia@docker'
-  #   environment:
-  #     TZ: America/Chicago
-  #   volumes:
-  #     - ./data/radarr:/config
-  #     - /mnt/media/dox/movies:/movies
-  #     - /mnt/media/dl:/downloads
-
-  # lidarr:
-  #   container_name: lidarr
-  #   image: linuxserver/lidarr:latest
-  #   restart: unless-stopped
-  #   labels:
-  #     - 'traefik.enable=true'
-  #     - 'traefik.http.routers.lidarr.rule=Host(`lidarr.${MY_DOMAIN}`)'
-  #     - 'traefik.http.routers.lidarr.entryPoints=websecure'
-  #     - 'traefik.http.routers.lidarr.middlewares=authelia@docker'
-  #   environment:
-  #     TZ: America/Chicago
-  #   volumes:
-  #     - ./data/lidarr:/config
-  #     - /mnt/media/dox/music:/music
-  #     - /mnt/media/dl:/downloads
-
-  # deluge:
-  #   container_name: deluge
-  #   image: linuxserver/deluge:latest
-  #   restart: unless-stopped
-  #   labels:
-  #     - 'traefik.enable=true'
-  #     - 'traefik.http.routers.deluge.rule=Host(`deluge.${MY_DOMAIN}`)'
-  #     - 'traefik.http.routers.deluge.entryPoints=websecure'
-  #     - 'traefik.http.routers.deluge.middlewares=authelia@docker'
-  #   environment:
-  #     TZ: America/Chicago
-  #   volumes:
-  #     - ./data/deluge:/config
-  #     - /mnt/media/dl:/downloads
-
-  # freshrss:
-  #   image: linuxserver/freshrss:latest
-  #   container_name: porto_rss
-  #   restart: unless-stopped
-  #   labels:
-  #     - 'traefik.enable=true'
-  #     - 'traefik.http.routers.freshrss.rule=Host(`rss.${MY_DOMAIN}`)'
-  #     - 'traefik.http.routers.freshrss.entryPoints=websecure'
-  #     - 'traefik.http.routers.freshrss.middlewares=authelia@docker'
-  #   environment:
-  #     - PUID=1000
-  #     - PGID=1000
-  #     - TZ=America/Chicago
-  #   volumes:
-  #     - ./config/freshrss:/config
