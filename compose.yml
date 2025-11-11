@@ -23,7 +23,7 @@ services:
   tailscale:
     image: tailscale/tailscale:latest
     container_name: tailscale
-    hostname: gateway
+    hostname: multivac
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY}
       - TS_EXTRA_ARGS=--login-server=https://${ENTRYPOINT}:443 --accept-routes

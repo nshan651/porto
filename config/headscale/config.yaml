@@ -70,23 +70,23 @@ log:
 
 dns:
   magic_dns: true
-  base_domain: ts.net
+  base_domain: arpa
   override_local_dns: true
   nameservers:
     global:
       - 1.1.1.1
       - 8.8.8.8
   extra_records:
-    - name: "syncthing.gateway.ts.net"
+    - name: "syncthing.multivac.arpa"
       type: "A"
       value: "100.64.0.3"
-    - name: "nextcloud.gateway.ts.net"
+    - name: "nextcloud.multivac.arpa"
       type: "A"
       value: "100.64.0.3"
-    - name: "rss.gateway.ts.net"
+    - name: "rss.multivac.arpa"
       type: "A"
       value: "100.64.0.3"
-    - name: "jellyfin.gateway.ts.net"
+    - name: "jellyfin.multivac.arpa"
       type: "A"
       value: "100.64.0.3"
 
