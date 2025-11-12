@@ -40,9 +40,9 @@ services:
     image: linuxserver/syncthing:latest
     restart: unless-stopped
     labels:
-      - 'traefik.enable=true'
-      - 'traefik.http.routers.syncthing.rule=Host(`syncthing.${TAILNET_DOMAIN}`)'
-      - 'traefik.http.routers.syncthing.entryPoints=web'
+      - "traefik.enable=true"
+      - "traefik.http.routers.syncthing.rule=Host(`syncthing.${TAILNET_DOMAIN}`)"
+      - "traefik.http.routers.syncthing.entrypoints=web"
     environment:
       TZ: America/Chicago
       PUID: 1000
@@ -56,30 +56,31 @@ services:
     image: linuxserver/nextcloud
     restart: unless-stopped
     labels:
-      - 'traefik.enable=true'
-      - 'traefik.http.routers.nextcloud.rule=Host(`nextcloud.${TAILNET_DOMAIN}`)'
-      - 'traefik.http.routers.nextcloud.entryPoints=web'
+      - "traefik.enable=true"
+      - "traefik.http.routers.nextcloud.rule=Host(`nextcloud.${TAILNET_DOMAIN}`)"
+      - "traefik.http.routers.nextcloud.entrypoints=web"
     environment:
-      PUID: '1000'
-      PGID: '1000'
-      TZ: 'America/Chicago'
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "America/Chicago"
     volumes:
       - ./config/nextcloud:/config
       - ./data/nextcloud:/data
       - /mnt/media/dox/pix:/data/nshan651/files/Photos:ro
 
+  # Connect using this url: 'http://rss.multivac.arpa/api/greader.php'
   freshrss:
     image: linuxserver/freshrss:latest
-    container_name: fresh_rss
+    container_name: freshrss
     restart: unless-stopped
     labels:
       - 'traefik.enable=true'
-      - 'traefik.http.routers.freshrss.rule=Host(`rss.${TAILNET_DOMAIN}`)'
-      - 'traefik.http.routers.freshrss.entryPoints=web'
+      - 'traefik.http.routers.freshrss.rule=host(`rss.${TAILNET_DOMAIN}`)'
+      - 'traefik.http.routers.freshrss.entrypoints=web'
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=America/Chicago
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "America/Chicago"
     volumes:
       - ./config/freshrss:/config
 
@@ -88,7 +89,7 @@ services:
     image: jellyfin/jellyfin:latest
     restart: unless-stopped
     environment:
-      TZ: 'America/Chicago'
+      TZ: "America/Chicago"
     volumes:
       - ./data/jellyfin:/config
       - /mnt/media/dox/movies:/movies
