@@ -1,12 +1,18 @@
 
 up:
-	docker compose up -d --remove-orphans
+	docker compose -f compose.yml -f compose.internal.yml up -d --remove-orphans
 
 down:
-	docker compose down
+	docker compose -f compose.yml -f compose.internal.yml down
 
 nodes:
 	docker exec headscale headscale nodes list
+
+preauth:
+	docker exec headscale headscale preauthkeys create \
+		-u 1 \
+		--reusable \
+		--expiration 24h
 
 secret:
 	@[ -n "$(PASSWORD)" ] && \

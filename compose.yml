@@ -1,136 +1,66 @@
 ---
 services:
 
+  external_proxy:
+    image: traefik
+    container_name: external_proxy
+    restart: unless-stopped
+    command:
+      - "--log.level=DEBUG"
+      - "--api.insecure=false"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=duckdns"
+      - "--certificatesresolvers.letsencrypt.acme.email=mail@mail.com"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.disablePropagationCheck=true"
+      - "--entrypoints.websecure.http.tls=true"
+      - "--entrypoints.websecure.http.tls.certResolver=letsencrypt"
+      - "--entrypoints.websecure.http.tls.domains[0].main=${PUBLIC_DOMAIN}"
+      - "--entrypoints.websecure.http.tls.domains[0].sans=*.${PUBLIC_DOMAIN}"
+      - "--entrypoints.websecure.http.tls.domains[1].main=${CONTROL_DOMAIN}"
+      - "--entrypoints.websecure.http.tls.domains[1].sans=*.${CONTROL_DOMAIN}"
+    volumes:
+      - "./data/traefik/letsencrypt:/letsencrypt"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DUCKDNS_TOKEN: "${DUCKDNS_TOKEN}"
+
+  # Personal website
+  website:
+    image: nginx:latest
+    container_name: porto_website
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.website.rule=Host(`${PUBLIC_DOMAIN}`)"
+      - "traefik.http.routers.website.entrypoints=websecure"
+    volumes:
+      - /var/www/${PUBLIC_DOMAIN}:/usr/share/nginx/html:ro
+
   # VPN Control Plane.
   headscale:
     image: headscale/headscale:latest
     container_name: headscale
     restart: unless-stopped
     ports:
-      - "443:443"
-      - "80:80"
       - "50443:50443"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.headscale.rule=Host(`${CONTROL_DOMAIN}`)"
+      - "traefik.http.routers.headscale.entrypoints=websecure"
+      - "traefik.http.services.headscale.loadbalancer.server.port=8080"
     volumes:
       - ./config/headscale:/etc/headscale
       - ./data/headscale:/var/lib/headscale
     command: serve
     healthcheck:
         test: ["CMD", "headscale", "health"]
-    networks:
-      - backend
-
-  # Client node.
-  tailscale:
-    image: tailscale/tailscale:latest
-    container_name: tailscale
-    hostname: multivac
-    environment:
-      - TS_AUTHKEY=${TS_AUTHKEY}
-      - TS_EXTRA_ARGS=--login-server=https://${ENTRYPOINT}:443 --accept-routes
-      - TS_STATE_DIR=/var/lib/tailscale
-      - TS_USERSPACE=false
-    volumes:
-      - ./data/tailscale:/var/lib/tailscale
-      - /dev/net/tun:/dev/net/tun
-    cap_add:
-      - NET_ADMIN
-      - SYS_MODULE
-    restart: unless-stopped
-    networks:
-      - services
-    depends_on:
-      - headscale
-
-  traefik:
-    image: traefik
-    container_name: traefik
-    command:
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.network=services"
-      - "--entrypoints.web.address=:80"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    network_mode: service:tailscale
-    depends_on:
-      - tailscale
-    restart: unless-stopped
-
-  syncthing:
-    container_name: syncthing
-    image: linuxserver/syncthing:latest
-    restart: unless-stopped
-    labels:
-      - 'traefik.enable=true'
-      - 'traefik.http.routers.syncthing.rule=Host(`syncthing.${DOMAIN}`)'
-      - 'traefik.http.routers.syncthing.entryPoints=web'
-    environment:
-      TZ: America/Chicago
-      PUID: 1000
-      PGID: 1000
-    volumes:
-      - ./config/syncthing:/config
-      - /mnt/media/ark:/data1
-    networks:
-      - services
-
-  nextcloud:
-    container_name: nextcloud
-    image: linuxserver/nextcloud
-    restart: unless-stopped
-    labels:
-      - 'traefik.enable=true'
-      - 'traefik.http.routers.nextcloud.rule=Host(`nextcloud.${DOMAIN}`)'
-      - 'traefik.http.routers.nextcloud.entryPoints=web'
-    environment:
-      PUID: '1000'
-      PGID: '1000'
-      TZ: 'America/Chicago'
-    volumes:
-      - ./config/nextcloud:/config
-      - ./data/nextcloud:/data
-      - /mnt/media/dox/pix:/data/nshan651/files/Photos:ro
-    networks:
-      - services
-
-  freshrss:
-    image: linuxserver/freshrss:latest
-    container_name: fresh_rss
-    restart: unless-stopped
-    labels:
-      - 'traefik.enable=true'
-      - 'traefik.http.routers.freshrss.rule=Host(`rss.${DOMAIN}`)'
-      - 'traefik.http.routers.freshrss.entryPoints=web'
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=America/Chicago
-    volumes:
-      - ./config/freshrss:/config
-    networks:
-      - services
-
-  jellyfin:
-    container_name: jellyfin
-    image: jellyfin/jellyfin:latest
-    restart: unless-stopped
-    environment:
-      TZ: 'America/Chicago'
-    volumes:
-      - ./data/jellyfin:/config
-      - /mnt/media/dox/movies:/movies
-      - /mnt/media/dox/tv:/tv
-      - /mnt/media/dox/music:/music
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.${DOMAIN}`)"
-      - "traefik.http.routers.jellyfin.entrypoints=web"
-    networks:
-      - services
-
-networks:
-  backend:
-    driver: bridge
-  services:
-    driver: bridge

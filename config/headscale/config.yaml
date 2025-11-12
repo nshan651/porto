@@ -1,7 +1,7 @@
 server_url: https://layerseven.duckdns.org:443
 
 # Set this to 0.0.0.0:8080 when behind a reverse proxy.
-listen_addr: 0.0.0.0:443
+listen_addr: 0.0.0.0:8080
 metrics_listen_addr: 127.0.0.1:9090
 
 grpc_listen_addr: 0.0.0.0:50443
@@ -56,7 +56,7 @@ database:
 acme_url: https://acme-v02.api.letsencrypt.org/directory
 acme_email: "admin@mail.com"
 
-tls_letsencrypt_hostname: "layerseven.duckdns.org"
+tls_letsencrypt_hostname: ""
 tls_letsencrypt_cache_dir: /var/lib/headscale/cache
 tls_letsencrypt_challenge_type: HTTP-01
 tls_letsencrypt_listen: ":http"
@@ -79,16 +79,16 @@ dns:
   extra_records:
     - name: "syncthing.multivac.arpa"
       type: "A"
-      value: "100.64.0.3"
+      value: "100.64.0.1"
     - name: "nextcloud.multivac.arpa"
       type: "A"
-      value: "100.64.0.3"
+      value: "100.64.0.1"
     - name: "rss.multivac.arpa"
       type: "A"
-      value: "100.64.0.3"
+      value: "100.64.0.1"
     - name: "jellyfin.multivac.arpa"
       type: "A"
-      value: "100.64.0.3"
+      value: "100.64.0.1"
 
   search_domains: []
 
