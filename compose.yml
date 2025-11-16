@@ -26,8 +26,8 @@ services:
       - "--entrypoints.websecure.http.tls.domains[1].main=${CONTROL_DOMAIN}"
       - "--entrypoints.websecure.http.tls.domains[1].sans=*.${CONTROL_DOMAIN}"
     volumes:
-      - "./data/traefik/letsencrypt:/letsencrypt"
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - ./data/traefik/letsencrypt:/letsencrypt
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     ports:
       - "80:80"
       - "443:443"

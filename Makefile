@@ -8,6 +8,9 @@ down:
 nodes:
 	docker exec headscale headscale nodes list
 
+pull:
+	docker compose -f compose.yml -f compose.internal.yml pull
+
 preauth:
 	docker exec headscale headscale preauthkeys create \
 		-u 1 \
@@ -21,4 +24,4 @@ secret:
 
 # Reload photos in nextcloud.
 rescan:
-	docker exec -u abc nextcloud php /app/www/public/occ files:scan --all
+	docker exec -u www-data nextcloud php occ files:scan --all

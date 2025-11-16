@@ -51,22 +51,50 @@ services:
       - ./config/syncthing:/config
       - /mnt/media/ark:/data1
 
+  nextcloud_db:
+    container_name: nextcloud_db
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nextcloud
+      POSTGRES_DB: nextcloud
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./data/nextcloud_db:/var/lib/postgresql/data
+
+  nextcloud_redis:
+    container_name: nextcloud_redis
+    image: redis:alpine
+    restart: unless-stopped
+
   nextcloud:
     container_name: nextcloud
-    image: linuxserver/nextcloud
+    image: nextcloud:latest
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.nextcloud.rule=Host(`nextcloud.${TAILNET_DOMAIN}`)"
       - "traefik.http.routers.nextcloud.entrypoints=web"
     environment:
-      PUID: "1000"
-      PGID: "1000"
       TZ: "America/Chicago"
+      POSTGRES_HOST: nextcloud_db
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: nextcloud_redis
+      NEXTCLOUD_ADMIN_USER: ${NEXTCLOUD_ADMIN_USER:-nshan651}
+      NEXTCLOUD_ADMIN_PASSWORD: ${DB_PASSWORD}
+      NEXTCLOUD_TRUSTED_DOMAINS: nextcloud.${TAILNET_DOMAIN}
+      NC_skeletondirectory: ""
     volumes:
       - ./config/nextcloud:/config
       - ./data/nextcloud:/data
-      - /mnt/media/dox/pix:/data/nshan651/files/Photos:ro
+      - /mnt/media/vault/pix:/pix:ro # External dir I want to use
+      - ./hooks/nextcloud-postinstall.sh:/docker-entrypoint-hooks.d/post-installation/nextcloud-postinstall.sh:ro
+      # - /mnt/media/vault/pix:/data/nshan651/files/Photos:ro
+    depends_on:
+      - nextcloud_db
+      - nextcloud_redis
 
   # Connect using this url: 'http://rss.multivac.arpa/api/greader.php'
   freshrss:
