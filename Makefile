@@ -2,8 +2,10 @@
 up:
 	docker compose -f compose.yml -f compose.internal.yml up -d --remove-orphans
 
+# Note: removes all named/anon volumes.
+# We use bind mounts on everything important, so --volumes minimizes clutter.
 down:
-	docker compose -f compose.yml -f compose.internal.yml down
+	docker compose -f compose.yml -f compose.internal.yml down --volumes
 
 nodes:
 	docker exec headscale headscale nodes list
@@ -25,3 +27,12 @@ secret:
 # Reload photos in nextcloud.
 rescan:
 	docker exec -u www-data nextcloud php occ files:scan --all
+
+# WARNING: removes the following:
+# - all stopped containers
+# - all networks not used by at least one container
+# - all anonymous volumes not used by at least one container
+# - all images without at least one container associated to them
+# - all build cache
+prune:
+	docker system prune --all --volumes
