@@ -28,8 +28,8 @@ services:
       - "--api.insecure=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
-      # - "--providers.docker.network=services"
       - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     depends_on:
@@ -50,6 +50,22 @@ services:
     volumes:
       - ./config/syncthing:/config
       - /mnt/media/ark:/data1
+
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.vaultwarden.rule=Host(`pass.${TAILNET_DOMAIN}`)"
+      # - "traefik.http.routers.vaultwarden.entrypoints=web"
+      - "traefik.http.routers.vaultwarden.entrypoints=websecure"
+      - "traefik.http.routers.vaultwarden.tls=true"
+      - "traefik.http.services.vaultwarden.loadbalancer.server.port=80"
+    environment:
+      DOMAIN: "https://pass.${TAILNET_DOMAIN}"
+    volumes:
+      - ./data/vaultwarden:/data/
 
   nextcloud_db:
     container_name: nextcloud_db
