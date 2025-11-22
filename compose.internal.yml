@@ -1,11 +1,12 @@
----
 services:
 
   # Client node.
   tailscale:
     image: tailscale/tailscale:latest
     container_name: tailscale
-    hostname: multivac
+    hostname: aleph
+    networks:
+      - private_net
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY}
       - TS_EXTRA_ARGS=--login-server=https://${CONTROL_DOMAIN}:443 --accept-routes
@@ -19,6 +20,46 @@ services:
       - SYS_MODULE
     restart: unless-stopped
 
+  authelia_redis:
+    image: redis
+    restart: unless-stopped
+    container_name: authelia_redis
+    networks:
+      - private_net
+
+  authelia_generate_secrets:
+    build: generate_secrets
+    volumes:
+      - ./data/authelia/secrets:/secrets
+
+  authelia:
+    image: authelia/authelia
+    container_name: authelia
+    restart: unless-stopped
+    networks:
+      - private_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.authelia.rule=Host(`auth.${TAILNET_DOMAIN}`)"
+      - "traefik.http.routers.authelia.entryPoints=websecure"
+      - "traefik.http.middlewares.authelia.forwardAuth.address=http://authelia:9091/api/authz/forward-auth"
+      - "traefik.http.middlewares.authelia.forwardAuth.trustForwardHeader=true"
+      - "traefik.http.middlewares.authelia.forwardAuth.authResponseHeaders=Remote-User,Remote-Groups,Remote-Email,Remote-Name"
+    depends_on:
+      authelia_generate_secrets:
+        condition: service_completed_successfully
+      tailscale:
+        condition: service_started
+    volumes:
+      - ./data/authelia:/config
+    environment:
+      TZ: America/Chicago
+      X_AUTHELIA_CONFIG_FILTERS: template
+      TAILNET_DOMAIN: ${TAILNET_DOMAIN}
+      AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET_FILE: /config/secrets/JWT_SECRET
+      AUTHELIA_SESSION_SECRET_FILE: /config/secrets/SESSION_SECRET
+      AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE: /config/secrets/STORAGE_ENCRYPTION_KEY
+
   internal_proxy:
     image: traefik
     container_name: internal_proxy
@@ -30,6 +71,7 @@ services:
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.websecure.http.tls=true"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     depends_on:
@@ -39,10 +81,13 @@ services:
     container_name: syncthing
     image: linuxserver/syncthing:latest
     restart: unless-stopped
+    networks:
+      - private_net
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.syncthing.rule=Host(`syncthing.${TAILNET_DOMAIN}`)"
-      - "traefik.http.routers.syncthing.entrypoints=web"
+      - "traefik.http.routers.syncthing.entrypoints=websecure"
+      - "traefik.http.routers.syncthing.middlewares=authelia@docker"
     environment:
       TZ: America/Chicago
       PUID: 1000
@@ -55,12 +100,15 @@ services:
     image: vaultwarden/server:latest
     container_name: vaultwarden
     restart: unless-stopped
+    networks:
+      - private_net
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.vaultwarden.rule=Host(`pass.${TAILNET_DOMAIN}`)"
       - "traefik.http.routers.vaultwarden.entrypoints=websecure"
       - "traefik.http.routers.vaultwarden.tls=true"
       - "traefik.http.services.vaultwarden.loadbalancer.server.port=80"
+      - "traefik.http.routers.vaultwarden.middlewares=authelia@docker"
     environment:
       DOMAIN: "https://pass.${TAILNET_DOMAIN}"
     volumes:
@@ -70,6 +118,8 @@ services:
     container_name: nextcloud_db
     image: postgres:16-alpine
     restart: unless-stopped
+    networks:
+      - private_net
     environment:
       POSTGRES_USER: nextcloud
       POSTGRES_DB: nextcloud
@@ -81,6 +131,8 @@ services:
     container_name: nextcloud_redis
     image: redis:alpine
     restart: unless-stopped
+    networks:
+      - private_net
     volumes:
       - ./data/nextcloud_redis:/data
 
@@ -88,10 +140,13 @@ services:
     container_name: nextcloud
     image: nextcloud:latest
     restart: unless-stopped
+    networks:
+      - private_net
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.nextcloud.rule=Host(`nextcloud.${TAILNET_DOMAIN}`)"
-      - "traefik.http.routers.nextcloud.entrypoints=web"
+      - "traefik.http.routers.nextcloud.entrypoints=websecure"
+      # - "traefik.http.routers.nextcloud.middlewares=authelia@docker"
     environment:
       TZ: "America/Chicago"
       POSTGRES_HOST: nextcloud_db
@@ -112,15 +167,18 @@ services:
       - nextcloud_db
       - nextcloud_redis
 
-  # Connect using this url: 'http://rss.multivac.arpa/api/greader.php'
+  # Connect using this url: `http://rss.aleph.arpa/api/greader.php`
   freshrss:
     image: linuxserver/freshrss:latest
     container_name: freshrss
     restart: unless-stopped
+    networks:
+      - private_net
     labels:
-      - 'traefik.enable=true'
-      - 'traefik.http.routers.freshrss.rule=host(`rss.${TAILNET_DOMAIN}`)'
-      - 'traefik.http.routers.freshrss.entrypoints=web'
+      - "traefik.enable=true"
+      - "traefik.http.routers.freshrss.rule=host(`rss.${TAILNET_DOMAIN}`)"
+      - "traefik.http.routers.freshrss.entrypoints=websecure"
+      - "traefik.http.routers.freshrss.middlewares=authelia@docker"
     environment:
       PUID: "1000"
       PGID: "1000"
@@ -132,6 +190,8 @@ services:
     container_name: jellyfin
     image: jellyfin/jellyfin:latest
     restart: unless-stopped
+    networks:
+      - private_net
     environment:
       TZ: "America/Chicago"
     volumes:
@@ -142,4 +202,9 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.${TAILNET_DOMAIN}`)"
-      - "traefik.http.routers.jellyfin.entrypoints=web"
+      - "traefik.http.routers.jellyfin.entrypoints=websecure"
+      - "traefik.http.routers.jellyfin.middlewares=authelia@docker"
+
+networks:
+  private_net:
+    driver: bridge

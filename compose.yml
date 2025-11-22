@@ -1,10 +1,11 @@
----
 services:
 
   external_proxy:
     image: traefik
     container_name: external_proxy
     restart: unless-stopped
+    networks:
+      - public_net
     command:
       - "--log.level=DEBUG"
       - "--api.insecure=false"
@@ -39,6 +40,8 @@ services:
     image: nginx:latest
     container_name: porto_website
     restart: unless-stopped
+    networks:
+      - public_net
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.website.rule=Host(`${PUBLIC_DOMAIN}`)"
@@ -51,8 +54,10 @@ services:
     image: headscale/headscale:latest
     container_name: headscale
     restart: unless-stopped
+    networks:
+      - public_net
     ports:
-      - "50443:50443"
+      - "50443:50443" # For gRPC.
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.headscale.rule=Host(`${CONTROL_DOMAIN}`)"
@@ -63,4 +68,8 @@ services:
       - ./data/headscale:/var/lib/headscale
     command: serve
     healthcheck:
-        test: ["CMD", "headscale", "health"]
+      test: ["CMD", "headscale", "health"]
+
+networks:
+  public_net:
+    driver: bridge

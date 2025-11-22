@@ -1,4 +1,3 @@
-
 up:
 	docker compose -f compose.yml -f compose.internal.yml up -d --remove-orphans
 
@@ -20,9 +19,10 @@ preauth:
 		--expiration 24h
 
 secret:
-	@[ -n "$(PASSWORD)" ] && \
-		docker run --rm authelia/authelia:latest authelia crypto hash generate argon2 --password '$(PASSWORD)' \
-		|| echo "Usage: make secret PASSWORD=<your_password>"
+	@[ -n "$(PASS)" ] && \
+	docker run --rm authelia/authelia:latest \
+		authelia crypto hash generate argon2 --password '$(PASS)' \
+		|| echo "Usage: make secret PASS=<your_password>"
 
 # Reload photos in nextcloud.
 rescan:

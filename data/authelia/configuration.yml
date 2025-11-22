@@ -18,8 +18,8 @@ access_control:
 session:
   cookies:
     - name: 'authelia_session'
-      domain: '{{ env "MY_DOMAIN" }}'
-      authelia_url: 'https://auth.{{ env "MY_DOMAIN" }}'
+      domain: '{{ env "TAILNET_DOMAIN" }}'
+      authelia_url: 'https://auth.{{ env "TAILNET_DOMAIN" }}'
       expiration: '1 hour'
       inactivity: '5 minutes'
 

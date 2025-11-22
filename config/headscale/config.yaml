@@ -77,19 +77,22 @@ dns:
       - 1.1.1.1
       - 8.8.8.8
   extra_records:
-    - name: "syncthing.multivac.arpa"
+    - name: "syncthing.aleph.arpa"
       type: "A"
       value: "100.64.0.1"
-    - name: "pass.multivac.arpa"
+    - name: "pass.aleph.arpa"
       type: "A"
       value: "100.64.0.1"
-    - name: "nextcloud.multivac.arpa"
+    - name: "nextcloud.aleph.arpa"
       type: "A"
       value: "100.64.0.1"
-    - name: "rss.multivac.arpa"
+    - name: "rss.aleph.arpa"
       type: "A"
       value: "100.64.0.1"
-    - name: "jellyfin.multivac.arpa"
+    - name: "jellyfin.aleph.arpa"
+      type: "A"
+      value: "100.64.0.1"
+    - name: "auth.aleph.arpa"
       type: "A"
       value: "100.64.0.1"
 
