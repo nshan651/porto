@@ -60,7 +60,7 @@ services:
       - "50443:50443" # For gRPC.
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.headscale.rule=Host(`${CONTROL_DOMAIN}`)"
+      - "traefik.http.routers.headscale.rule=Host(`hs.${PUBLIC_DOMAIN}`)"
       - "traefik.http.routers.headscale.entrypoints=websecure"
       - "traefik.http.services.headscale.loadbalancer.server.port=8080"
     volumes:

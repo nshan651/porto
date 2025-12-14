@@ -1,4 +1,4 @@
-server_url: https://layerseven.duckdns.org:443
+server_url: https://hs.nshan651.duckdns.org:443
 
 # Set this to 0.0.0.0:8080 when behind a reverse proxy.
 listen_addr: 0.0.0.0:8080
@@ -77,22 +77,22 @@ dns:
       - 1.1.1.1
       - 8.8.8.8
   extra_records:
-    - name: "syncthing.aleph.arpa"
+    - name: "syncthing.layerseven.duckdns.org"
       type: "A"
       value: "100.64.0.1"
-    - name: "pass.aleph.arpa"
+    - name: "pass.layerseven.duckdns.org"
       type: "A"
       value: "100.64.0.1"
-    - name: "nextcloud.aleph.arpa"
+    - name: "nextcloud.layerseven.duckdns.org"
       type: "A"
       value: "100.64.0.1"
-    - name: "rss.aleph.arpa"
+    - name: "rss.layerseven.duckdns.org"
       type: "A"
       value: "100.64.0.1"
-    - name: "jellyfin.aleph.arpa"
+    - name: "jellyfin.layerseven.duckdns.org"
       type: "A"
       value: "100.64.0.1"
-    - name: "auth.aleph.arpa"
+    - name: "auth.layerseven.duckdns.org"
       type: "A"
       value: "100.64.0.1"
 

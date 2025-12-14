@@ -9,7 +9,7 @@ services:
       - private_net
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY}
-      - TS_EXTRA_ARGS=--login-server=https://${CONTROL_DOMAIN}:443 --accept-routes
+      - TS_EXTRA_ARGS=--login-server=https://hs.${PUBLIC_DOMAIN}:443 --accept-routes
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
     volumes:
@@ -20,45 +20,45 @@ services:
       - SYS_MODULE
     restart: unless-stopped
 
-  authelia_redis:
-    image: redis
-    restart: unless-stopped
-    container_name: authelia_redis
-    networks:
-      - private_net
+  # authelia_redis:
+  #   image: redis
+  #   restart: unless-stopped
+  #   container_name: authelia_redis
+  #   networks:
+  #     - private_net
 
-  authelia_generate_secrets:
-    build: generate_secrets
-    volumes:
-      - ./data/authelia/secrets:/secrets
+  # authelia_generate_secrets:
+  #   build: generate_secrets
+  #   volumes:
+  #     - ./data/authelia/secrets:/secrets
 
-  authelia:
-    image: authelia/authelia
-    container_name: authelia
-    restart: unless-stopped
-    networks:
-      - private_net
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.authelia.rule=Host(`auth.${TAILNET_DOMAIN}`)"
-      - "traefik.http.routers.authelia.entryPoints=websecure"
-      - "traefik.http.middlewares.authelia.forwardAuth.address=http://authelia:9091/api/authz/forward-auth"
-      - "traefik.http.middlewares.authelia.forwardAuth.trustForwardHeader=true"
-      - "traefik.http.middlewares.authelia.forwardAuth.authResponseHeaders=Remote-User,Remote-Groups,Remote-Email,Remote-Name"
-    depends_on:
-      authelia_generate_secrets:
-        condition: service_completed_successfully
-      tailscale:
-        condition: service_started
-    volumes:
-      - ./data/authelia:/config
-    environment:
-      TZ: America/Chicago
-      X_AUTHELIA_CONFIG_FILTERS: template
-      TAILNET_DOMAIN: ${TAILNET_DOMAIN}
-      AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET_FILE: /config/secrets/JWT_SECRET
-      AUTHELIA_SESSION_SECRET_FILE: /config/secrets/SESSION_SECRET
-      AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE: /config/secrets/STORAGE_ENCRYPTION_KEY
+  # authelia:
+  #   image: authelia/authelia
+  #   container_name: authelia
+  #   restart: unless-stopped
+  #   networks:
+  #     - private_net
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.authelia.rule=Host(`auth.${CONTROL_DOMAIN}`)"
+  #     - "traefik.http.routers.authelia.entryPoints=websecure"
+  #     - "traefik.http.middlewares.authelia.forwardAuth.address=http://authelia:9091/api/authz/forward-auth"
+  #     - "traefik.http.middlewares.authelia.forwardAuth.trustForwardHeader=true"
+  #     - "traefik.http.middlewares.authelia.forwardAuth.authResponseHeaders=Remote-User,Remote-Groups,Remote-Email,Remote-Name"
+  #   depends_on:
+  #     authelia_generate_secrets:
+  #       condition: service_completed_successfully
+  #     tailscale:
+  #       condition: service_started
+  #   volumes:
+  #     - ./data/authelia:/config
+  #   environment:
+  #     TZ: America/Chicago
+  #     X_AUTHELIA_CONFIG_FILTERS: template
+  #     CONTROL_DOMAIN: ${CONTROL_DOMAIN}
+  #     AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET_FILE: /config/secrets/JWT_SECRET
+  #     AUTHELIA_SESSION_SECRET_FILE: /config/secrets/SESSION_SECRET
+  #     AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE: /config/secrets/STORAGE_ENCRYPTION_KEY
 
   internal_proxy:
     image: traefik
@@ -71,11 +71,22 @@ services:
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=duckdns"
+      - "--certificatesresolvers.letsencrypt.acme.email=mail@mail.com"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.disablePropagationCheck=true"
       - "--entrypoints.websecure.http.tls=true"
+      - "--entrypoints.websecure.http.tls.certResolver=letsencrypt"
+      - "--entrypoints.websecure.http.tls.domains[0].main=${CONTROL_DOMAIN}"
+      - "--entrypoints.websecure.http.tls.domains[0].sans=*.${CONTROL_DOMAIN}"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./data/traefik_internal/letsencrypt:/letsencrypt
     depends_on:
       - tailscale
+    environment:
+      DUCKDNS_TOKEN: "${DUCKDNS_TOKEN}"
 
   syncthing:
     container_name: syncthing
@@ -85,9 +96,9 @@ services:
       - private_net
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.syncthing.rule=Host(`syncthing.${TAILNET_DOMAIN}`)"
+      - "traefik.http.routers.syncthing.rule=Host(`syncthing.${CONTROL_DOMAIN}`)"
       - "traefik.http.routers.syncthing.entrypoints=websecure"
-      - "traefik.http.routers.syncthing.middlewares=authelia@docker"
+      # - "traefik.http.routers.syncthing.middlewares=authelia@docker"
     environment:
       TZ: America/Chicago
       PUID: 1000
@@ -104,13 +115,13 @@ services:
       - private_net
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.vaultwarden.rule=Host(`pass.${TAILNET_DOMAIN}`)"
+      - "traefik.http.routers.vaultwarden.rule=Host(`pass.${CONTROL_DOMAIN}`)"
       - "traefik.http.routers.vaultwarden.entrypoints=websecure"
       - "traefik.http.routers.vaultwarden.tls=true"
       - "traefik.http.services.vaultwarden.loadbalancer.server.port=80"
-      - "traefik.http.routers.vaultwarden.middlewares=authelia@docker"
+      # - "traefik.http.routers.vaultwarden.middlewares=authelia@docker"
     environment:
-      DOMAIN: "https://pass.${TAILNET_DOMAIN}"
+      DOMAIN: "https://pass.${CONTROL_DOMAIN}"
     volumes:
       - ./data/vaultwarden:/data/
 
@@ -144,7 +155,7 @@ services:
       - private_net
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.nextcloud.rule=Host(`nextcloud.${TAILNET_DOMAIN}`)"
+      - "traefik.http.routers.nextcloud.rule=Host(`nextcloud.${CONTROL_DOMAIN}`)"
       - "traefik.http.routers.nextcloud.entrypoints=websecure"
       - "traefik.http.services.nextcloud.loadbalancer.server.port=80"
       - "traefik.http.routers.nextcloud.tls=true"
@@ -157,10 +168,10 @@ services:
       REDIS_HOST: nextcloud_redis
       NEXTCLOUD_ADMIN_USER: ${NEXTCLOUD_ADMIN_USER:-nshan651}
       NEXTCLOUD_ADMIN_PASSWORD: ${DB_PASSWORD}
-      NEXTCLOUD_TRUSTED_DOMAINS: nextcloud.${TAILNET_DOMAIN}
+      NEXTCLOUD_TRUSTED_DOMAINS: nextcloud.${CONTROL_DOMAIN}
       NC_skeletondirectory: ""
       OVERWRITEPROTOCOL: https
-      OVERWRITEHOST: nextcloud.${TAILNET_DOMAIN}
+      OVERWRITEHOST: nextcloud.${CONTROL_DOMAIN}
       TRUSTED_PROXIES: traefik
     volumes:
       - ./data/nextcloud:/var/www/html
@@ -179,9 +190,8 @@ services:
       - private_net
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.freshrss.rule=host(`rss.${TAILNET_DOMAIN}`)"
+      - "traefik.http.routers.freshrss.rule=host(`rss.${CONTROL_DOMAIN}`)"
       - "traefik.http.routers.freshrss.entrypoints=websecure"
-      - "traefik.http.routers.freshrss.middlewares=authelia@docker"
     environment:
       PUID: "1000"
       PGID: "1000"
@@ -204,10 +214,10 @@ services:
       - /mnt/media/dox/music:/music
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.${TAILNET_DOMAIN}`)"
+      - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.${CONTROL_DOMAIN}`)"
       - "traefik.http.routers.jellyfin.entrypoints=websecure"
-      - "traefik.http.routers.jellyfin.middlewares=authelia@docker"
+      # - "traefik.http.routers.jellyfin.middlewares=authelia@docker"
 
 networks:
   private_net:
-    driver: bridge # TODO: make this `external: false`
+    driver: bridge
