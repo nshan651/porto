@@ -11,6 +11,8 @@ services:
       - "--api.insecure=false"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.constraints=Label(`traefik.scope`, `public`)"
+      - "--providers.docker.network=public_net"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
@@ -46,6 +48,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.website.rule=Host(`${PUBLIC_DOMAIN}`)"
       - "traefik.http.routers.website.entrypoints=websecure"
+      - "traefik.scope=public"
     volumes:
       - /var/www/${PUBLIC_DOMAIN}:/usr/share/nginx/html:ro
 
@@ -56,13 +59,14 @@ services:
     restart: unless-stopped
     networks:
       - public_net
-    ports:
-      - "50443:50443" # For gRPC.
+    # ports:
+    #   - "50443:50443" # For gRPC.
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.headscale.rule=Host(`hs.${PUBLIC_DOMAIN}`)"
       - "traefik.http.routers.headscale.entrypoints=websecure"
       - "traefik.http.services.headscale.loadbalancer.server.port=8080"
+      - "traefik.scope=public"
     volumes:
       - ./config/headscale:/etc/headscale
       - ./data/headscale:/var/lib/headscale

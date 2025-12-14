@@ -1,0 +1,100 @@
+---
+services:
+
+  # Client node.
+  tailscale:
+    image: tailscale/tailscale:latest
+    container_name: tailscale
+    hostname: multivac
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_EXTRA_ARGS=--login-server=https://layerseven.duckdns.org:443 --accept-routes
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+    volumes:
+      - ./data/tailscale:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    restart: unless-stopped
+
+  internal_proxy:
+    image: traefik
+    container_name: internal_proxy
+    network_mode: service:tailscale
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=services"
+      - "--entrypoints.web.address=:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - tailscale
+    restart: unless-stopped
+
+  syncthing:
+    container_name: syncthing
+    image: linuxserver/syncthing:latest
+    restart: unless-stopped
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.syncthing.rule=Host(`syncthing.${DOMAIN}`)'
+      - 'traefik.http.routers.syncthing.entryPoints=web'
+    environment:
+      TZ: America/Chicago
+      PUID: 1000
+      PGID: 1000
+    volumes:
+      - ./config/syncthing:/config
+      - /mnt/media/ark:/data1
+
+  nextcloud:
+    container_name: nextcloud
+    image: linuxserver/nextcloud
+    restart: unless-stopped
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.nextcloud.rule=Host(`nextcloud.${DOMAIN}`)'
+      - 'traefik.http.routers.nextcloud.entryPoints=web'
+    environment:
+      PUID: '1000'
+      PGID: '1000'
+      TZ: 'America/Chicago'
+    volumes:
+      - ./config/nextcloud:/config
+      - ./data/nextcloud:/data
+      - /mnt/media/dox/pix:/data/nshan651/files/Photos:ro
+
+  freshrss:
+    image: linuxserver/freshrss:latest
+    container_name: fresh_rss
+    restart: unless-stopped
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.freshrss.rule=Host(`rss.${DOMAIN}`)'
+      - 'traefik.http.routers.freshrss.entryPoints=web'
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+    volumes:
+      - ./config/freshrss:/config
+
+  jellyfin:
+    container_name: jellyfin
+    image: jellyfin/jellyfin:latest
+    restart: unless-stopped
+    environment:
+      TZ: 'America/Chicago'
+    volumes:
+      - ./data/jellyfin:/config
+      - /mnt/media/dox/movies:/movies
+      - /mnt/media/dox/tv:/tv
+      - /mnt/media/dox/music:/music
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.${DOMAIN}`)"
+      - "traefik.http.routers.jellyfin.entrypoints=web"
