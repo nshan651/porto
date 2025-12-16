@@ -69,11 +69,12 @@ log:
   level: info
 
 dns:
-  magic_dns: true
+  magic_dns: false
   base_domain: arpa
   override_local_dns: true
   nameservers:
     global:
+      - 9.9.9.9
       - 1.1.1.1
       - 8.8.8.8
   extra_records:

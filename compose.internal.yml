@@ -20,46 +20,6 @@ services:
       - SYS_MODULE
     restart: unless-stopped
 
-  # authelia_redis:
-  #   image: redis
-  #   restart: unless-stopped
-  #   container_name: authelia_redis
-  #   networks:
-  #     - private_net
-
-  # authelia_generate_secrets:
-  #   build: generate_secrets
-  #   volumes:
-  #     - ./data/authelia/secrets:/secrets
-
-  # authelia:
-  #   image: authelia/authelia
-  #   container_name: authelia
-  #   restart: unless-stopped
-  #   networks:
-  #     - private_net
-  #   labels:
-  #     - "traefik.enable=true"
-  #     - "traefik.http.routers.authelia.rule=Host(`auth.${CONTROL_DOMAIN}`)"
-  #     - "traefik.http.routers.authelia.entryPoints=websecure"
-  #     - "traefik.http.middlewares.authelia.forwardAuth.address=http://authelia:9091/api/authz/forward-auth"
-  #     - "traefik.http.middlewares.authelia.forwardAuth.trustForwardHeader=true"
-  #     - "traefik.http.middlewares.authelia.forwardAuth.authResponseHeaders=Remote-User,Remote-Groups,Remote-Email,Remote-Name"
-  #   depends_on:
-  #     authelia_generate_secrets:
-  #       condition: service_completed_successfully
-  #     tailscale:
-  #       condition: service_started
-  #   volumes:
-  #     - ./data/authelia:/config
-  #   environment:
-  #     TZ: America/Chicago
-  #     X_AUTHELIA_CONFIG_FILTERS: template
-  #     CONTROL_DOMAIN: ${CONTROL_DOMAIN}
-  #     AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET_FILE: /config/secrets/JWT_SECRET
-  #     AUTHELIA_SESSION_SECRET_FILE: /config/secrets/SESSION_SECRET
-  #     AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE: /config/secrets/STORAGE_ENCRYPTION_KEY
-
   internal_proxy:
     image: traefik
     container_name: internal_proxy
@@ -90,6 +50,47 @@ services:
     environment:
       DUCKDNS_TOKEN: "${DUCKDNS_TOKEN}"
 
+  authelia_redis:
+    image: redis
+    restart: unless-stopped
+    container_name: authelia_redis
+    networks:
+      - private_net
+
+  authelia_generate_secrets:
+    build: generate_secrets
+    volumes:
+      - ./data/authelia/secrets:/secrets
+
+  authelia:
+    image: authelia/authelia
+    container_name: authelia
+    restart: unless-stopped
+    networks:
+      - private_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.scope=private"
+      - "traefik.http.routers.authelia.rule=Host(`auth.${CONTROL_DOMAIN}`)"
+      - "traefik.http.routers.authelia.entryPoints=websecure"
+      - "traefik.http.middlewares.authelia.forwardAuth.address=http://authelia:9091/api/authz/forward-auth"
+      - "traefik.http.middlewares.authelia.forwardAuth.trustForwardHeader=true"
+      - "traefik.http.middlewares.authelia.forwardAuth.authResponseHeaders=Remote-User,Remote-Groups,Remote-Email,Remote-Name"
+    depends_on:
+      authelia_generate_secrets:
+        condition: service_completed_successfully
+      tailscale:
+        condition: service_started
+    volumes:
+      - ./data/authelia:/config
+    environment:
+      TZ: America/Chicago
+      X_AUTHELIA_CONFIG_FILTERS: template
+      CONTROL_DOMAIN: ${CONTROL_DOMAIN}
+      AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET_FILE: /config/secrets/JWT_SECRET
+      AUTHELIA_SESSION_SECRET_FILE: /config/secrets/SESSION_SECRET
+      AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE: /config/secrets/STORAGE_ENCRYPTION_KEY
+
   syncthing:
     container_name: syncthing
     image: linuxserver/syncthing:latest
@@ -101,7 +102,7 @@ services:
       - "traefik.scope=private"
       - "traefik.http.routers.syncthing.rule=Host(`syncthing.${CONTROL_DOMAIN}`)"
       - "traefik.http.routers.syncthing.entrypoints=websecure"
-      # - "traefik.http.routers.syncthing.middlewares=authelia@docker"
+      - "traefik.http.routers.syncthing.middlewares=authelia@docker"
     environment:
       TZ: America/Chicago
       PUID: 1000
@@ -121,9 +122,8 @@ services:
       - "traefik.scope=private"
       - "traefik.http.routers.vaultwarden.rule=Host(`pass.${CONTROL_DOMAIN}`)"
       - "traefik.http.routers.vaultwarden.entrypoints=websecure"
-      - "traefik.http.routers.vaultwarden.tls=true"
       - "traefik.http.services.vaultwarden.loadbalancer.server.port=80"
-      # - "traefik.http.routers.vaultwarden.middlewares=authelia@docker"
+      - "traefik.http.routers.vaultwarden.middlewares=authelia@docker"
     environment:
       DOMAIN: "https://pass.${CONTROL_DOMAIN}"
     volumes:
@@ -198,6 +198,7 @@ services:
       - "traefik.scope=private"
       - "traefik.http.routers.freshrss.rule=host(`rss.${CONTROL_DOMAIN}`)"
       - "traefik.http.routers.freshrss.entrypoints=websecure"
+      - "traefik.http.routers.freshrss.middlewares=authelia@docker"
     environment:
       PUID: "1000"
       PGID: "1000"
@@ -223,7 +224,7 @@ services:
       - "traefik.scope=private"
       - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.${CONTROL_DOMAIN}`)"
       - "traefik.http.routers.jellyfin.entrypoints=websecure"
-      # - "traefik.http.routers.jellyfin.middlewares=authelia@docker"
+      - "traefik.http.routers.jellyfin.middlewares=authelia@docker"
 
 networks:
   private_net:
