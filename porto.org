@@ -83,7 +83,7 @@ My portable, private home server infrastructure.
 #+html: </details>
 
 #+name: arch
-[[file:./docs/arch.png]]
+[[file:./docs/arch.svg]]
 
 * Setup
 ** Obtaining a Domain Name
