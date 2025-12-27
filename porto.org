@@ -4,7 +4,10 @@
 
 My portable, private home server infrastructure.
 
-#+html: <details><summary>Graphviz Source</summary>
+#+name: arch
+[[file:./docs/arch.svg]]
+
+#+html: <details><summary>Diagram Source</summary>
 #+begin_src dot :tangle docs/arch.dot :mkdirp yes :file ./docs/arch.svg :cmdline -Kdot -Tsvg :results silent
   digraph G {
       fontname="Helvetica,Arial,sans-serif";
@@ -26,7 +29,7 @@ My portable, private home server infrastructure.
         color=white;
         style=rounded;
 
-        public_rp [label="External RP"];
+        public_rp [label="External Reverse Proxy"];
         website [label="Website\n(public.duckdns.org)"];
         headscale [label="Headscale\n(hs.public.duckdns.org)"];
 
@@ -65,7 +68,7 @@ My portable, private home server infrastructure.
             style=rounded;
 
             docker_ts_node [label="Docker Tailscale Node\n(*.private.duckdns.org)"];
-            private_rp [label="Internal RP"];
+            private_rp [label="Internal Reverse Proxy"];
 
             service1 [label="Service 1"];
             service2 [label="Service 2"];
@@ -82,23 +85,93 @@ My portable, private home server infrastructure.
 #+end_src
 #+html: </details>
 
-#+name: arch
-[[file:./docs/arch.svg]]
+* Usage
+#+begin_src sh
+  Usage: make [target]
+
+  Docker compose targets:
+    up                Spin up the public and private compose stacks.
+    down              Tear down the public and private compose stacks, removing dangling volumes.
+    pull              Pull service images.
+
+  Tailscale targets:
+    nodes             List existing nodes in the tailnet.
+    preauth           Generate a new preauth key.
+    pull              Pull service images.
+
+  Authentication:
+    secret            Generate a new argon2 hashed password. Run this as `PASS='mypwd123' make secret`.
+
+  Nextcloud:
+    rescan            Reload photos in nextcloud.
+
+  Default target:
+    help              Show this help message.
+#+end_src
+
+** Env
+Copy the ~.env_template~ to ~.env~, replacing the environment variables with your own information.
+#+begin_src sh :tangle .env_template :mkdirp yes
+  # Domain for public-facing services.
+  PUBLIC_DOMAIN=mydomain.duckdns.org
+
+  # Entrypoint for Tailscale services.
+  CONTROL_DOMAIN=control.duckdns.org
+
+  # ACME email and user.
+  EMAIL=admin@mail.com
+  USER=admin
+
+  # DNS token for cert mgmt.
+  DUCKDNS_TOKEN=
+
+  # Pre-authentication key that allows tailscale client to auto-register with headscale.
+  TS_AUTHKEY=
+
+  # Nextcloud DB password.
+  DB_PASSWORD=
+#+end_src
+
+** Tailscale
+Create a user.
+#+begin_src sh
+  docker exec headscale headscale users create myuser
+#+end_src
+
+** Auth
+Run ~PASS='mypwd123' make secret~ to generate an argon2 hash of your password.
+
+Copy ~data/authelia/users_database.template.yml~ to ~data/authelia/users_database.yml~, replacing the password section with the argon2 hash we just generated.
+#+begin_src yaml :tangle data/authelia/users_database.template.yml :mkdirp yes
+  # List of users
+  users:
+    authelia:
+      disabled: false
+      displayname: "Authelia User"
+      # Password is authelia
+      password: "$6$rounds=50000$BpLnfgDsc2WD8F2q$Zis.ixdg9s/UOJYrs56b5QEZFiZECu0qZVNsIYxBaNJ7ucIL.nlxVCT5tqh8KHG8X4tlwCFm5r6NTOZZ5qRFN/"
+      email: "authelia@authelia.com"
+      groups:
+        - "admins"
+        - "dev"
+#+end_src
 
 * Setup
 ** Obtaining a Domain Name
-Acquiring a domain is a fairly simple process. Domains can registered with any accredited /registrar/, of which there are many to choose from. Popular choices include [[https://www.godaddy.com][GoDaddy]], [[https://www.namecheap.com][Namecheap]], [[https://www.cloudflare.com/products/registrar/][Cloudflare]], and [[https://porkbun.com][Porkbun]], among others. Aside from specialty domains (have fun paying markups for =.ai=), most domains will only cost a few dollars a year.
+Acquiring a domain is a fairly simple process. Domains can registered with any accredited /registrar/, of which there are many to choose from. Popular choices include [[https://www.godaddy.com][GoDaddy]], [[https://www.namecheap.com][Namecheap]], [[https://www.cloudflare.com/products/registrar/][Cloudflare]], and [[https://porkbun.com][Porkbun]], among others. Aside from specialty domains (have fun paying markups for =.ai= TLDs), most domains will only cost a few dollars per year.
 
-My personal recommendation for just getting started is [[https://www.duckdns.org][DuckDNS]] as it's completely free. We'll grab two domains, one for public-facing services (such as the headscale control plane, which needs to be reachable via https. More on that later!), and a second domain for private services on our cluster_tailnet.
+My personal recommendation for just starting out is [[https://www.duckdns.org][DuckDNS]] as it's completely free. We'll grab two domains: one for public-facing services (such as the headscale control plane, which needs to be reachable via https. More on that later!), and a second domain for private services on our tailnet.
 
 ** Getting a server
-A server is a computer that broadcasts information to the internet. Just like with domain registrars, there are a lot of choices when it comes to server hosting. You can jump straight into the deep end and use your own hardware, but I'd actually recommend renting a [[https://en.wikipedia.org/wiki/Virtual_private_server][virtual private server (VPS)]] to start.
+A server is a computer that provides information to other computers on a network. That network could be the public internet or a private intranet.
+
+Just like with domain registrars, there are a lot of choices when it comes to server hosting. You can jump straight to using your own hardware, but I'd actually recommend renting a [[https://en.wikipedia.org/wiki/Virtual_private_server][virtual private server (VPS)]] to start. I use [[https://www.hetzner.com/][Hetzner]], but there are many other excellent affordable options.
 
 ** DNS Records
 With a domain and a server, we can now connect the two using DNS records. DNS (Domain Name System) records are instructions stored on DNS servers that provide information about a domain, such as the IP address associated with it and how to handle requests to that domain.
 
 * Compose
-My docker compose stack is split into two files: ~compose.yml~ for public-facing services, and ~compose.internal.yml~ for services on my cluster_tailnet.
+My docker compose stack is split into two files: ~compose.yml~ for public-facing services, and ~compose.internal.yml~ for services on my tailnet.
 
 ** Public
 *** External Reverse Proxy

@@ -18,7 +18,7 @@ digraph G {
       color=white;
       style=rounded;
 
-      public_rp [label="External RP"];
+      public_rp [label="External Reverse Proxy"];
       website [label="Website\n(public.duckdns.org)"];
       headscale [label="Headscale\n(hs.public.duckdns.org)"];
 
@@ -57,7 +57,7 @@ digraph G {
           style=rounded;
 
           docker_ts_node [label="Docker Tailscale Node\n(*.private.duckdns.org)"];
-          private_rp [label="Internal RP"];
+          private_rp [label="Internal Reverse Proxy"];
 
           service1 [label="Service 1"];
           service2 [label="Service 2"];

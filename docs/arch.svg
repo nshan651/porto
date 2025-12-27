@@ -27,20 +27,20 @@
 <!-- internet -->
 <g id="node1" class="node">
 <title>internet</title>
-<path fill="none" stroke="none" d="M201.88,-569C201.88,-569 164.12,-569 164.12,-569 158.12,-569 152.12,-563 152.12,-557 152.12,-557 152.12,-545 152.12,-545 152.12,-539 158.12,-533 164.12,-533 164.12,-533 201.88,-533 201.88,-533 207.88,-533 213.88,-539 213.88,-545 213.88,-545 213.88,-557 213.88,-557 213.88,-563 207.88,-569 201.88,-569"/>
-<text xml:space="preserve" text-anchor="middle" x="183" y="-545.2" font-family="Helvetica,Arial,sans-serif" font-size="14.00" fill="white">Internet</text>
+<path fill="none" stroke="none" d="M206.88,-569C206.88,-569 169.12,-569 169.12,-569 163.12,-569 157.12,-563 157.12,-557 157.12,-557 157.12,-545 157.12,-545 157.12,-539 163.12,-533 169.12,-533 169.12,-533 206.88,-533 206.88,-533 212.88,-533 218.88,-539 218.88,-545 218.88,-545 218.88,-557 218.88,-557 218.88,-563 212.88,-569 206.88,-569"/>
+<text xml:space="preserve" text-anchor="middle" x="188" y="-545.2" font-family="Helvetica,Arial,sans-serif" font-size="14.00" fill="white">Internet</text>
 </g>
 <!-- public_rp -->
 <g id="node2" class="node">
 <title>public_rp</title>
-<path fill="#2d2d2d" stroke="white" d="M215,-468C215,-468 151,-468 151,-468 145,-468 139,-462 139,-456 139,-456 139,-444 139,-444 139,-438 145,-432 151,-432 151,-432 215,-432 215,-432 221,-432 227,-438 227,-444 227,-444 227,-456 227,-456 227,-462 221,-468 215,-468"/>
-<text xml:space="preserve" text-anchor="middle" x="183" y="-444.2" font-family="Helvetica,Arial,sans-serif" font-size="14.00" fill="white">External RP</text>
+<path fill="#2d2d2d" stroke="white" d="M255.25,-468C255.25,-468 120.75,-468 120.75,-468 114.75,-468 108.75,-462 108.75,-456 108.75,-456 108.75,-444 108.75,-444 108.75,-438 114.75,-432 120.75,-432 120.75,-432 255.25,-432 255.25,-432 261.25,-432 267.25,-438 267.25,-444 267.25,-444 267.25,-456 267.25,-456 267.25,-462 261.25,-468 255.25,-468"/>
+<text xml:space="preserve" text-anchor="middle" x="188" y="-444.2" font-family="Helvetica,Arial,sans-serif" font-size="14.00" fill="white">External Reverse Proxy</text>
 </g>
 <!-- internet&#45;&gt;public_rp -->
 <g id="edge3" class="edge">
 <title>internet&#45;&gt;public_rp</title>
-<path fill="none" stroke="white" d="M183,-533.21C183,-526.67 183,-518.76 183,-510.46"/>
-<polygon fill="white" stroke="white" points="186.5,-510.51 183,-500.51 179.5,-510.51 186.5,-510.51"/>
+<path fill="none" stroke="white" d="M188,-533.21C188,-526.67 188,-518.76 188,-510.46"/>
+<polygon fill="white" stroke="white" points="191.5,-510.51 188,-500.51 184.5,-510.51 191.5,-510.51"/>
 </g>
 <!-- website -->
 <g id="node3" class="node">
@@ -52,8 +52,8 @@
 <!-- public_rp&#45;&gt;website -->
 <g id="edge1" class="edge">
 <title>public_rp&#45;&gt;website</title>
-<path fill="none" stroke="white" d="M165.93,-431.58C150.62,-415.96 127.93,-392.81 110.48,-375"/>
-<polygon fill="white" stroke="white" points="113.43,-373.01 103.93,-368.31 108.43,-377.91 113.43,-373.01"/>
+<path fill="none" stroke="white" d="M170.06,-431.58C153.96,-415.96 130.13,-392.81 111.78,-375"/>
+<polygon fill="white" stroke="white" points="114.48,-372.74 104.87,-368.29 109.6,-377.76 114.48,-372.74"/>
 </g>
 <!-- headscale -->
 <g id="node4" class="node">
@@ -65,8 +65,8 @@
 <!-- public_rp&#45;&gt;headscale -->
 <g id="edge2" class="edge">
 <title>public_rp&#45;&gt;headscale</title>
-<path fill="none" stroke="white" d="M200.24,-431.58C215.71,-415.96 238.63,-392.81 256.26,-375"/>
-<polygon fill="white" stroke="white" points="258.34,-377.88 262.88,-368.31 253.36,-372.95 258.34,-377.88"/>
+<path fill="none" stroke="white" d="M204.37,-431.58C218.93,-416.1 240.43,-393.23 257.11,-375.48"/>
+<polygon fill="white" stroke="white" points="259.53,-378.02 263.82,-368.34 254.43,-373.22 259.53,-378.02"/>
 </g>
 <!-- docker_ts_node -->
 <g id="node8" class="node">
@@ -127,8 +127,8 @@
 <!-- private_rp -->
 <g id="node9" class="node">
 <title>private_rp</title>
-<path fill="#2d2d2d" stroke="white" d="M578.75,-161C578.75,-161 519.25,-161 519.25,-161 513.25,-161 507.25,-155 507.25,-149 507.25,-149 507.25,-137 507.25,-137 507.25,-131 513.25,-125 519.25,-125 519.25,-125 578.75,-125 578.75,-125 584.75,-125 590.75,-131 590.75,-137 590.75,-137 590.75,-149 590.75,-149 590.75,-155 584.75,-161 578.75,-161"/>
-<text xml:space="preserve" text-anchor="middle" x="549" y="-137.2" font-family="Helvetica,Arial,sans-serif" font-size="14.00" fill="white">Internal RP</text>
+<path fill="#2d2d2d" stroke="white" d="M614,-161C614,-161 484,-161 484,-161 478,-161 472,-155 472,-149 472,-149 472,-137 472,-137 472,-131 478,-125 484,-125 484,-125 614,-125 614,-125 620,-125 626,-131 626,-137 626,-137 626,-149 626,-149 626,-155 620,-161 614,-161"/>
+<text xml:space="preserve" text-anchor="middle" x="549" y="-137.2" font-family="Helvetica,Arial,sans-serif" font-size="14.00" fill="white">Internal Reverse Proxy</text>
 </g>
 <!-- docker_ts_node&#45;&gt;private_rp -->
 <g id="edge9" class="edge">
