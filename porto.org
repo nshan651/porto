@@ -1,0 +1,122 @@
+#+title: Porto
+#+options: tex:t toc:nil
+#+startup: inlineimages latexpreview
+
+My portable, private home server infrastructure.
+
+* Setup
+** Obtaining a Domain Name
+Acquiring a domain is a fairly simple process. Domains can registered with any accredited /registrar/, of which there are many to choose from. Popular choices include [[https://www.godaddy.com][GoDaddy]], [[https://www.namecheap.com][Namecheap]], [[https://www.cloudflare.com/products/registrar/][Cloudflare]], and [[https://porkbun.com][Porkbun]], among others. Aside from specialty domains (have fun paying markups for =.ai=), most domains will only cost a few dollars a year.
+
+My personal recommendation for just getting started is [[https://www.duckdns.org][DuckDNS]] as it's completely free. We'll grab two domains, one for public-facing services (such as the headscale control plane, which needs to be reachable via https. More on that later!), and a second domain for private services on our tailnet.
+
+** Getting a server
+A server is a computer that broadcasts information to the internet. Just like with domain registrars, there are a lot of choices when it comes to server hosting. You can jump straight into the deep end and use your own hardware, but I'd actually recommend renting a [[https://en.wikipedia.org/wiki/Virtual_private_server][virtual private server (VPS)]] to start.
+
+** DNS Records
+With a domain and a server, we can now connect the two using DNS records. DNS (Domain Name System) records are instructions stored on DNS servers that provide information about a domain, such as the IP address associated with it and how to handle requests to that domain.
+
+* Compose
+My docker compose stack is split into two files: ~compose.yml~ for public-facing services, and ~compose.internal.yml~ for services on my tailnet.
+
+** Public
+*** External Reverse Proxy
+#+name: external-proxy
+#+begin_src yaml
+  external_proxy:
+    image: traefik
+    container_name: external_proxy
+    restart: unless-stopped
+    networks:
+      - public_net
+    command:
+      - "--log.level=DEBUG"
+      - "--api.insecure=false"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.constraints=Label(`traefik.scope`, `public`)"
+      - "--providers.docker.network=public_net"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=duckdns"
+      - "--certificatesresolvers.letsencrypt.acme.email=mail@mail.com"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.disablePropagationCheck=true"
+      - "--entrypoints.websecure.http.tls=true"
+      - "--entrypoints.websecure.http.tls.certResolver=letsencrypt"
+      - "--entrypoints.websecure.http.tls.domains[0].main=${PUBLIC_DOMAIN}"
+      - "--entrypoints.websecure.http.tls.domains[0].sans=*.${PUBLIC_DOMAIN}"
+      - "--entrypoints.websecure.http.tls.domains[1].main=${CONTROL_DOMAIN}"
+      - "--entrypoints.websecure.http.tls.domains[1].sans=*.${CONTROL_DOMAIN}"
+    volumes:
+      - ./data/traefik/letsencrypt:/letsencrypt
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DUCKDNS_TOKEN: "${DUCKDNS_TOKEN}"
+#+end_src
+
+*** Website
+#+name: website
+#+begin_src yaml
+  # Personal website
+  website:
+    image: nginx:latest
+    container_name: porto_website
+    restart: unless-stopped
+    networks:
+      - public_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.website.rule=Host(`${PUBLIC_DOMAIN}`)"
+      - "traefik.http.routers.website.entrypoints=websecure"
+      - "traefik.scope=public"
+    volumes:
+      - /var/www/${PUBLIC_DOMAIN}:/usr/share/nginx/html:ro
+#+end_src
+
+*** Headscale
+#+name: headscale
+#+begin_src yaml
+  # VPN Control Plane.
+  headscale:
+    image: headscale/headscale:latest
+    container_name: headscale
+    restart: unless-stopped
+    networks:
+      - public_net
+    # ports:
+    #   - "50443:50443" # For gRPC.
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.headscale.rule=Host(`hs.${PUBLIC_DOMAIN}`)"
+      - "traefik.http.routers.headscale.entrypoints=websecure"
+      - "traefik.http.services.headscale.loadbalancer.server.port=8080"
+      - "traefik.scope=public"
+    volumes:
+      - ./config/headscale:/etc/headscale
+      - ./data/headscale:/var/lib/headscale
+    command: serve
+    healthcheck:
+      test: ["CMD", "headscale", "health"]
+#+end_src
+
+*** Final
+#+begin_src yaml :tangle "test/compose.yml" :noweb yes
+  services:
+
+    <<external-proxy>>
+
+    <<website>>
+
+    <<headscale>>
+
+  networks:
+    public_net:
+      driver: bridge
+#+end_src
