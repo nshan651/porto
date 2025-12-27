@@ -108,26 +108,8 @@ services:
       PUID: 1000
       PGID: 1000
     volumes:
-      - ./config/syncthing:/config
+      - ./data/syncthing:/config
       - /mnt/media/ark:/data1
-
-  vaultwarden:
-    image: vaultwarden/server:latest
-    container_name: vaultwarden
-    restart: unless-stopped
-    networks:
-      - private_net
-    labels:
-      - "traefik.enable=true"
-      - "traefik.scope=private"
-      - "traefik.http.routers.vaultwarden.rule=Host(`pass.${CONTROL_DOMAIN}`)"
-      - "traefik.http.routers.vaultwarden.entrypoints=websecure"
-      - "traefik.http.services.vaultwarden.loadbalancer.server.port=80"
-      - "traefik.http.routers.vaultwarden.middlewares=authelia@docker"
-    environment:
-      DOMAIN: "https://pass.${CONTROL_DOMAIN}"
-    volumes:
-      - ./data/vaultwarden:/data/
 
   nextcloud_db:
     container_name: nextcloud_db
@@ -225,6 +207,23 @@ services:
       - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.${CONTROL_DOMAIN}`)"
       - "traefik.http.routers.jellyfin.entrypoints=websecure"
       - "traefik.http.routers.jellyfin.middlewares=authelia@docker"
+
+  actual:
+    image: actualbudget/actual-server:latest
+    container_name: actual
+    networks:
+      - private_net
+    volumes:
+      - ./data/actual:/data
+      - /mnt/media/vault/personal-finance/data:/budget
+    environment:
+      userFiles: "/budget"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.scope=private"
+      - "traefik.http.routers.actual.rule=Host(`actual.${CONTROL_DOMAIN}`)"
+      - "traefik.http.routers.actual.entrypoints=websecure"
+      - "traefik.http.routers.actual.middlewares=authelia@docker"
 
 networks:
   private_net:

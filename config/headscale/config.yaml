@@ -78,10 +78,10 @@ dns:
       - 1.1.1.1
       - 8.8.8.8
   extra_records:
-    - name: "syncthing.layerseven.duckdns.org"
+    - name: "auth.layerseven.duckdns.org"
       type: "A"
       value: "100.64.0.1"
-    - name: "pass.layerseven.duckdns.org"
+    - name: "syncthing.layerseven.duckdns.org"
       type: "A"
       value: "100.64.0.1"
     - name: "nextcloud.layerseven.duckdns.org"
@@ -93,7 +93,7 @@ dns:
     - name: "jellyfin.layerseven.duckdns.org"
       type: "A"
       value: "100.64.0.1"
-    - name: "auth.layerseven.duckdns.org"
+    - name: "actual.layerseven.duckdns.org"
       type: "A"
       value: "100.64.0.1"
 
