@@ -1,0 +1,73 @@
+digraph G {
+    fontname="Helvetica,Arial,sans-serif";
+    node [fontname="Helvetica,Arial,sans-serif", shape=rect, style="rounded,filled", fillcolor="#2d2d2d", fontcolor=white, color=white];
+    edge [fontname="Helvetica,Arial,sans-serif", color=white, fontcolor=white];
+    bgcolor="#1f1f1f";
+    rankdir=TB;
+    nodesep=0.7;
+    ranksep=0.9;
+    compound=true; // Allows edges to connect to clusters
+    splines=polyline;
+
+    internet [label="Internet", shape=none, fillcolor=none];
+
+    subgraph cluster_external {
+      bgcolor="#601000";
+      label="External Compose";
+      fontcolor=white;
+      color=white;
+      style=rounded;
+
+      public_rp [label="External RP"];
+      website [label="Website\n(public.duckdns.org)"];
+      headscale [label="Headscale\n(hs.public.duckdns.org)"];
+
+      // Connections
+      public_rp -> website;
+      public_rp -> headscale;
+    }
+
+    internet -> public_rp [lhead=cluster_external];
+
+    // Cluster_Tailnet Cluster
+    subgraph cluster_tailnet {
+      bgcolor="#013312";
+      label="Tailnet";
+      fontcolor=white;
+      color=white;
+      style=rounded;
+
+      // Tailnet nodes.
+      phone [label="Phone"];
+      laptop [label="Laptop"];
+      vps [label="VPS"];
+
+      phone -> laptop [dir=none, constraint=false];
+      laptop -> vps [dir=none, constraint=false];
+
+      // Connect mesh to tailscale_node
+      { phone; laptop; vps } -> docker_ts_node [dir=none];
+
+      // Cluster_Tailnet Cluster
+      subgraph cluster_internal {
+          bgcolor="#32467a";
+          label="Internal Compose";
+          fontcolor=white;
+          color=white;
+          style=rounded;
+
+          docker_ts_node [label="Docker Tailscale Node\n(*.private.duckdns.org)"];
+          private_rp [label="Internal RP"];
+
+          service1 [label="Service 1"];
+          service2 [label="Service 2"];
+          service3 [label="Service 3"];
+
+          docker_ts_node -> private_rp;
+          private_rp -> {service1; service2; service3};
+      }
+    }
+
+    // Connect Headscale to the Cluster_Tailnet
+    headscale -> docker_ts_node [lhead=cluster_internal];
+  }

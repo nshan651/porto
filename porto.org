@@ -4,11 +4,91 @@
 
 My portable, private home server infrastructure.
 
+#+begin_src dot :tangle docs/arch.dot :mkdirp yes :file docs/arch.svg :cmdline -Kdot -Tsvg
+  digraph G {
+      fontname="Helvetica,Arial,sans-serif";
+      node [fontname="Helvetica,Arial,sans-serif", shape=rect, style="rounded,filled", fillcolor="#2d2d2d", fontcolor=white, color=white];
+      edge [fontname="Helvetica,Arial,sans-serif", color=white, fontcolor=white];
+      bgcolor="#1f1f1f";
+      rankdir=TB;
+      nodesep=0.7;
+      ranksep=0.9;
+      compound=true; // Allows edges to connect to clusters
+      splines=polyline;
+
+      internet [label="Internet", shape=none, fillcolor=none];
+
+      subgraph cluster_external {
+        bgcolor="#601000";
+        label="External Compose";
+        fontcolor=white;
+        color=white;
+        style=rounded;
+
+        public_rp [label="External RP"];
+        website [label="Website\n(public.duckdns.org)"];
+        headscale [label="Headscale\n(hs.public.duckdns.org)"];
+
+        // Connections
+        public_rp -> website;
+        public_rp -> headscale;
+      }
+
+      internet -> public_rp [lhead=cluster_external];
+
+      // Cluster_Tailnet Cluster
+      subgraph cluster_tailnet {
+        bgcolor="#013312";
+        label="Tailnet";
+        fontcolor=white;
+        color=white;
+        style=rounded;
+
+        // Tailnet nodes.
+        phone [label="Phone"];
+        laptop [label="Laptop"];
+        vps [label="VPS"];
+
+        phone -> laptop [dir=none, constraint=false];
+        laptop -> vps [dir=none, constraint=false];
+
+        // Connect mesh to tailscale_node
+        { phone; laptop; vps } -> docker_ts_node [dir=none];
+
+        // Cluster_Tailnet Cluster
+        subgraph cluster_internal {
+            bgcolor="#32467a";
+            label="Internal Compose";
+            fontcolor=white;
+            color=white;
+            style=rounded;
+
+            docker_ts_node [label="Docker Tailscale Node\n(*.private.duckdns.org)"];
+            private_rp [label="Internal RP"];
+
+            service1 [label="Service 1"];
+            service2 [label="Service 2"];
+            service3 [label="Service 3"];
+
+            docker_ts_node -> private_rp;
+            private_rp -> {service1; service2; service3};
+        }
+      }
+
+      // Connect Headscale to the Cluster_Tailnet
+      headscale -> docker_ts_node [lhead=cluster_internal];
+    }
+#+end_src
+
+#+RESULTS:
+[[file:docs/arch.svg]]
+
+
 * Setup
 ** Obtaining a Domain Name
 Acquiring a domain is a fairly simple process. Domains can registered with any accredited /registrar/, of which there are many to choose from. Popular choices include [[https://www.godaddy.com][GoDaddy]], [[https://www.namecheap.com][Namecheap]], [[https://www.cloudflare.com/products/registrar/][Cloudflare]], and [[https://porkbun.com][Porkbun]], among others. Aside from specialty domains (have fun paying markups for =.ai=), most domains will only cost a few dollars a year.
 
-My personal recommendation for just getting started is [[https://www.duckdns.org][DuckDNS]] as it's completely free. We'll grab two domains, one for public-facing services (such as the headscale control plane, which needs to be reachable via https. More on that later!), and a second domain for private services on our tailnet.
+My personal recommendation for just getting started is [[https://www.duckdns.org][DuckDNS]] as it's completely free. We'll grab two domains, one for public-facing services (such as the headscale control plane, which needs to be reachable via https. More on that later!), and a second domain for private services on our cluster_tailnet.
 
 ** Getting a server
 A server is a computer that broadcasts information to the internet. Just like with domain registrars, there are a lot of choices when it comes to server hosting. You can jump straight into the deep end and use your own hardware, but I'd actually recommend renting a [[https://en.wikipedia.org/wiki/Virtual_private_server][virtual private server (VPS)]] to start.
@@ -17,7 +97,7 @@ A server is a computer that broadcasts information to the internet. Just like wi
 With a domain and a server, we can now connect the two using DNS records. DNS (Domain Name System) records are instructions stored on DNS servers that provide information about a domain, such as the IP address associated with it and how to handle requests to that domain.
 
 * Compose
-My docker compose stack is split into two files: ~compose.yml~ for public-facing services, and ~compose.internal.yml~ for services on my tailnet.
+My docker compose stack is split into two files: ~compose.yml~ for public-facing services, and ~compose.internal.yml~ for services on my cluster_tailnet.
 
 ** Public
 *** External Reverse Proxy
