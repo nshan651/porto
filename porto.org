@@ -4,7 +4,8 @@
 
 My portable, private home server infrastructure.
 
-#+begin_src dot :tangle docs/arch.dot :mkdirp yes :file docs/arch.svg :cmdline -Kdot -Tsvg
+#+html: <details><summary>Graphviz Source</summary>
+#+begin_src dot :tangle docs/arch.dot :mkdirp yes :file ./docs/arch.svg :cmdline -Kdot -Tsvg :results silent
   digraph G {
       fontname="Helvetica,Arial,sans-serif";
       node [fontname="Helvetica,Arial,sans-serif", shape=rect, style="rounded,filled", fillcolor="#2d2d2d", fontcolor=white, color=white];
@@ -79,10 +80,10 @@ My portable, private home server infrastructure.
       headscale -> docker_ts_node [lhead=cluster_internal];
     }
 #+end_src
+#+html: </details>
 
-#+RESULTS:
-[[file:docs/arch.svg]]
-
+#+name: arch
+[[file:./docs/arch.png]]
 
 * Setup
 ** Obtaining a Domain Name
