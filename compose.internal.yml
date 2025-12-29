@@ -211,6 +211,7 @@ services:
   actual:
     image: actualbudget/actual-server:latest
     container_name: actual
+    restart: unless-stopped
     networks:
       - private_net
     volumes:
@@ -224,6 +225,35 @@ services:
       - "traefik.http.routers.actual.rule=Host(`actual.${CONTROL_DOMAIN}`)"
       - "traefik.http.routers.actual.entrypoints=websecure"
       - "traefik.http.routers.actual.middlewares=authelia@docker"
+
+  beszel:
+    image: henrygd/beszel
+    container_name: beszel
+    restart: unless-stopped
+    networks:
+      - private_net
+    volumes:
+      - ./data/beszel/hub:/beszel_data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.scope=private"
+      - "traefik.http.routers.beszel.rule=Host(`monitor.${CONTROL_DOMAIN}`)"
+      - "traefik.http.routers.beszel.entrypoints=websecure"
+
+  beszel-agent:
+    image: henrygd/beszel-agent
+    container_name: beszel-agent
+    restart: unless-stopped
+    networks:
+      - private_net
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./data/beszel/agent:/var/lib/beszel-agent
+    environment:
+      LISTEN: 45876
+      KEY: "${BESZEL_KEY}"
+      TOKEN: "${BESZEL_TOKEN}"
+      HUB_URL: "https://monitor.${CONTROL_DOMAIN}"
 
 networks:
   private_net:
