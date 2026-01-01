@@ -99,6 +99,9 @@ dns:
     - name: "monitor.layerseven.duckdns.org"
       type: "A"
       value: "100.64.0.1"
+    - name: "ntfy.layerseven.duckdns.org"
+      type: "A"
+      value: "100.64.0.1"
 
   search_domains: []
 
