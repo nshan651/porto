@@ -241,7 +241,6 @@ services:
       - "traefik.scope=private"
       - "traefik.http.routers.beszel.rule=Host(`monitor.${CONTROL_DOMAIN}`)"
       - "traefik.http.routers.beszel.entrypoints=websecure"
-      - "traefik.http.routers.beszel.middlewares=authelia@docker"
 
   beszel-agent:
     image: henrygd/beszel-agent
@@ -269,6 +268,9 @@ services:
     volumes:
       - ./config/ntfy:/etc/ntfy
       - ./data/ntfy:/var/cache/ntfy
+    environment:
+      NTFY_UPSTREAM_BASE_URL: "https://ntfy.sh" # Required for IOS notifications...
+      NTFY_BASE_URL: "https://ntfy.${CONTROL_DOMAIN}"
     labels:
       - "traefik.enable=true"
       - "traefik.scope=private"
