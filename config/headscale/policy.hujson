@@ -1,0 +1,16 @@
+{
+  "tagOwners": {
+    // opencode owned by primary tailnet user.
+    "tag:opencode": ["nshan651@"]
+  },
+
+  "acls": [
+    // All member nodes can reach other members and opencode.
+    {
+      "action": "accept",
+      "src": ["autogroup:member"],
+      "dst": ["autogroup:member:*", "tag:opencode:*"]
+    },
+    // tag:opencode has no src rules - completely sandboxed.
+  ]
+}

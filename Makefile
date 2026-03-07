@@ -21,15 +21,15 @@ help:
 	@echo '  help              Show this help message.'
 
 up:
-	docker compose -f compose.yml -f compose.internal.yml up -d --remove-orphans
+	docker compose -f compose.yml -f compose.internal.yml -f compose.ai.yml up -d --remove-orphans
 
 # Note: removes all named/anon volumes.
 # We use bind mounts on everything important, so --volumes minimizes clutter.
 down:
-	docker compose -f compose.yml -f compose.internal.yml down --volumes
+	docker compose -f compose.yml -f compose.internal.yml -f compose.ai.yml down --volumes
 
 pull:
-	docker compose -f compose.yml -f compose.internal.yml pull
+	docker compose -f compose.yml -f compose.internal.yml -f compose.ai.yml pull
 
 # WARNING: removes the following:
 # - all stopped containers
