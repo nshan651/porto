@@ -78,30 +78,13 @@ dns:
       - 1.1.1.1
       - 8.8.8.8
   extra_records:
-    - name: "auth.layerseven.duckdns.org"
+    - name: "*.layerseven.duckdns.org"
       type: "CNAME"
       value: "aleph.arpa."
-    - name: "syncthing.layerseven.duckdns.org"
+    # Specificity rule
+    - name: "gnosis.layerseven.duckdns.org"
       type: "CNAME"
-      value: "aleph.arpa."
-    - name: "nextcloud.layerseven.duckdns.org"
-      type: "CNAME"
-      value: "aleph.arpa."
-    - name: "rss.layerseven.duckdns.org"
-      type: "CNAME"
-      value: "aleph.arpa."
-    - name: "jellyfin.layerseven.duckdns.org"
-      type: "CNAME"
-      value: "aleph.arpa."
-    - name: "actual.layerseven.duckdns.org"
-      type: "CNAME"
-      value: "aleph.arpa."
-    - name: "monitor.layerseven.duckdns.org"
-      type: "CNAME"
-      value: "aleph.arpa."
-    - name: "ntfy.layerseven.duckdns.org"
-      type: "CNAME"
-      value: "aleph.arpa."
+      value: "gnosis.arpa."
 
   search_domains: []
 

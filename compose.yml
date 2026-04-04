@@ -1,8 +1,8 @@
 services:
 
-  external_proxy:
+  public_proxy:
     image: traefik
-    container_name: external_proxy
+    container_name: public_proxy
     restart: unless-stopped
     networks:
       - public_net

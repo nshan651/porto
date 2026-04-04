@@ -1,9 +1,9 @@
 services:
 
   # Client node.
-  tailscale:
+  aleph_ts:
     image: tailscale/tailscale:latest
-    container_name: tailscale
+    container_name: aleph_ts
     hostname: aleph
     networks:
       - private_net
@@ -20,11 +20,11 @@ services:
       - SYS_MODULE
     restart: unless-stopped
 
-  internal_proxy:
+  aleph_proxy:
     image: traefik
-    container_name: internal_proxy
+    container_name: aleph_proxy
     restart: unless-stopped
-    network_mode: service:tailscale
+    network_mode: service:aleph_ts
     command:
       - "--api.insecure=true"
       - "--providers.docker=true"
@@ -44,9 +44,9 @@ services:
       - "--entrypoints.websecure.http.tls.domains[0].sans=*.${CONTROL_DOMAIN}"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./data/traefik_internal/letsencrypt:/letsencrypt
+      - ./data/traefik_private/letsencrypt:/letsencrypt
     depends_on:
-      - tailscale
+      - aleph_ts
     environment:
       DUCKDNS_TOKEN: "${DUCKDNS_TOKEN}"
 
@@ -79,7 +79,7 @@ services:
     depends_on:
       authelia_generate_secrets:
         condition: service_completed_successfully
-      tailscale:
+      aleph_ts:
         condition: service_started
     volumes:
       - ./data/authelia:/config
