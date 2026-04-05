@@ -2,8 +2,8 @@ help:
 	@echo 'Usage: make [target]	'
 	@echo
 	@echo 'Docker compose targets:'
-	@echo '  up                Spin up the public and private compose stacks.'
-	@echo '  down              Tear down the public and private compose stacks, removing dangling volumes.'
+	@echo '  up                Spin up the public compose stack.'
+	@echo '  down              Tear down the public and compose stack, removing dangling volumes.'
 	@echo '  pull              Pull service images.'
 	@echo
 	@echo 'Tailscale targets:'
@@ -21,15 +21,15 @@ help:
 	@echo '  help              Show this help message.'
 
 up:
-	docker compose -f compose.yml -f compose.internal.yml -f compose.ai.yml up -d --remove-orphans
+	docker compose -f compose.yml up -d --remove-orphans
 
 # Note: removes all named/anon volumes.
 # We use bind mounts on everything important, so --volumes minimizes clutter.
 down:
-	docker compose -f compose.yml -f compose.internal.yml -f compose.ai.yml down --volumes
+	docker compose -f compose.yml down --volumes
 
 pull:
-	docker compose -f compose.yml -f compose.internal.yml -f compose.ai.yml pull
+	docker compose -f compose.yml pull
 
 # WARNING: removes the following:
 # - all stopped containers

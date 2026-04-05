@@ -4,13 +4,15 @@ services:
     image: tailscale/tailscale:latest
     container_name: gnosis_ts
     hostname: gnosis
+    networks:
+      - private_net
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY}
       - TS_EXTRA_ARGS=--login-server=https://hs.${PUBLIC_DOMAIN}:443 --accept-routes --accept-dns=true
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
     volumes:
-      - ./data/tailscale:/var/lib/tailscale
+      - ../data/tailscale:/var/lib/tailscale
       - /dev/net/tun:/dev/net/tun
     cap_add:
       - NET_ADMIN
@@ -32,7 +34,7 @@ services:
       - "--entrypoints.websecure.http.tls=true"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./data/traefik_private/letsencrypt:/letsencrypt
+      - ../data/traefik_private/letsencrypt:/letsencrypt
     depends_on:
       - gnosis_ts
 
@@ -40,9 +42,10 @@ services:
     image: ghcr.io/anomalyco/opencode:latest
     container_name: opencode
     restart: unless-stopped
-    network_mode: service:gnosis_ts
+    networks:
+      - private_net
     volumes:
-      - ./data/opencode:/data
+      - ../data/opencode:/data
       - /mnt/media/vault/agents:/agents
     environment:
       GOOGLE_GENERATIVE_AI_API_KEY: ${GEMINI_API_KEY}
@@ -61,4 +64,8 @@ services:
       - "traefik.scope=private"
       - "traefik.http.routers.opencode.rule=Host(`gnosis.${CONTROL_DOMAIN}`)"
       - "traefik.http.routers.opencode.entrypoints=websecure"
-      - "traefik.http.services.opencode.loadbalancer.server.port=8080"
+      - "traefik.http.services.opencode.loadbalancer.server.port=4096"
+
+networks:
+  private_net:
+    driver: bridge
