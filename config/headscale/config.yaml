@@ -81,10 +81,12 @@ dns:
     - name: "*.layerseven.duckdns.org"
       type: "CNAME"
       value: "aleph.arpa."
-    # Specificity rule
-    - name: "gnosis.layerseven.duckdns.org"
-      type: "CNAME"
-      value: "gnosis.arpa."
+    - name: "oc.gnosis.arpa"
+      type: "A"
+      value: "100.64.0.5"
+    - name: "syncthing.gnosis.arpa"
+      type: "A"
+      value: "100.64.0.5"
 
   search_domains: []
 

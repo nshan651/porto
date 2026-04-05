@@ -6,6 +6,8 @@ services:
     hostname: gnosis
     networks:
       - private_net
+    ports:
+      - "80:80"
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY}
       - TS_EXTRA_ARGS=--login-server=https://hs.${PUBLIC_DOMAIN}:443 --accept-routes --accept-dns=true
@@ -29,12 +31,10 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.constraints=Label(`traefik.scope`, `private`)"
+      - "--providers.docker.network=private_net"
       - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      - "--entrypoints.websecure.http.tls=true"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ../data/traefik_private/letsencrypt:/letsencrypt
     depends_on:
       - gnosis_ts
 
@@ -57,14 +57,32 @@ services:
       XDG_CACHE_HOME: /data/cache
     working_dir: /agents
     command: ["web", "--hostname", "0.0.0.0"]
-    depends_on:
-      - gnosis_ts
     labels:
       - "traefik.enable=true"
       - "traefik.scope=private"
-      - "traefik.http.routers.opencode.rule=Host(`gnosis.${CONTROL_DOMAIN}`)"
-      - "traefik.http.routers.opencode.entrypoints=websecure"
+      - "traefik.http.routers.opencode.rule=Host(`oc.gnosis.arpa`)"
+      - "traefik.http.routers.opencode.entrypoints=web"
       - "traefik.http.services.opencode.loadbalancer.server.port=4096"
+
+  syncthing:
+    container_name: syncthing
+    image: linuxserver/syncthing:latest
+    restart: unless-stopped
+    networks:
+      - private_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.scope=private"
+      - "traefik.http.routers.syncthing.rule=Host(`syncthing.gnosis.arpa`)"
+      - "traefik.http.routers.syncthing.entrypoints=web"
+      - "traefik.http.services.syncthing.loadbalancer.server.port=8384"
+    environment:
+      TZ: America/Chicago
+      PUID: 1000
+      PGID: 1000
+    volumes:
+      - ../data/syncthing:/config
+      - /mnt/media/ark:/data1
 
 networks:
   private_net:

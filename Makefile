@@ -1,8 +1,10 @@
+HOSTNAME := $(shell hostname -s)
+
 help:
 	@echo 'Usage: make [target]	'
 	@echo
 	@echo 'Docker compose targets:'
-	@echo '  up                Spin up the public compose stack.'
+	@echo '  up                Spin up the system compose stack.'
 	@echo '  down              Tear down the public and compose stack, removing dangling volumes.'
 	@echo '  pull              Pull service images.'
 	@echo
@@ -21,15 +23,15 @@ help:
 	@echo '  help              Show this help message.'
 
 up:
-	docker compose -f compose.yml up -d --remove-orphans
+	docker compose -f system/compose.$(HOSTNAME).yml --env-file=.env up -d --remove-orphans
 
 # Note: removes all named/anon volumes.
 # We use bind mounts on everything important, so --volumes minimizes clutter.
 down:
-	docker compose -f compose.yml down --volumes
+	docker compose -f system/compose.$(HOSTNAME).yml --env-file=.env down --volumes
 
 pull:
-	docker compose -f compose.yml pull
+	docker compose -f system/compose.$(HOSTNAME).yml --env-file=.env pull
 
 # WARNING: removes the following:
 # - all stopped containers
