@@ -39,12 +39,15 @@ services:
       - gnosis_ts
 
   opencode:
-    image: ghcr.io/anomalyco/opencode:latest
     container_name: opencode
+    build:
+      context: .
+      dockerfile: Dockerfile.opencode
     restart: unless-stopped
     networks:
       - private_net
     volumes:
+      - ../data/ssh:/root/.ssh:ro
       - ../data/opencode:/data
       - /mnt/media/vault/agents:/agents
     environment:
