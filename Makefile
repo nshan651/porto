@@ -1,11 +1,14 @@
 HOSTNAME := $(shell hostname -s)
 
+.PHONY: help up down ps pull prune nodes preauth secret rescan
+
 help:
 	@echo 'Usage: make [target]	'
 	@echo
 	@echo 'Docker compose targets:'
 	@echo '  up                Spin up the system compose stack.'
 	@echo '  down              Tear down the public and compose stack, removing dangling volumes.'
+	@echo '  ps                List the system compose services.'
 	@echo '  pull              Pull service images.'
 	@echo
 	@echo 'Tailscale targets:'
@@ -29,6 +32,9 @@ up:
 # We use bind mounts on everything important, so --volumes minimizes clutter.
 down:
 	docker compose -f system/compose.$(HOSTNAME).yml --env-file=.env down --volumes
+
+ps:
+	docker compose -f system/compose.$(HOSTNAME).yml --env-file=.env ps
 
 pull:
 	docker compose -f system/compose.$(HOSTNAME).yml --env-file=.env pull
