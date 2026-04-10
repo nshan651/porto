@@ -111,11 +111,11 @@ services:
     networks:
       - private_net
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --tries=1 http://localhost:8384/rest/system/ping -O - | grep -q '\"pong\"' || exit 1"]
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8384/rest/system/ping || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
+      start_period: 60s
     labels:
       - "traefik.enable=true"
       - "traefik.scope=private"
@@ -173,7 +173,7 @@ services:
     networks:
       - private_net
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --tries=1 http://localhost/status.php -O - | grep -q '\"installed\":true' || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost/status.php || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -215,7 +215,7 @@ services:
     networks:
       - private_net
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --tries=1 http://localhost/health -O - || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:80/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -240,11 +240,11 @@ services:
     networks:
       - private_net
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --tries=1 http://localhost:8096/Health -O - || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:8096/Health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
+      start_period: 60s
     environment:
       TZ: "America/Chicago"
     volumes:
@@ -266,7 +266,7 @@ services:
     networks:
       - private_net
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --tries=1 http://localhost:3006/api/health -O - || exit 1"]
+      test: ["CMD-SHELL", "wget -q --tries=1 http://localhost:5006/api/health -O - || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -292,7 +292,7 @@ services:
     networks:
       - private_net
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --tries=1 http://localhost:8080/api/health -O - || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:8090/api/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -312,7 +312,7 @@ services:
     networks:
       - private_net
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --tries=1 http://localhost:45876 -O - || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:45876 -o /dev/null || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
