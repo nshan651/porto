@@ -291,12 +291,6 @@ services:
     restart: unless-stopped
     networks:
       - private_net
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8090/api/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
     volumes:
       - ../data/beszel/hub:/beszel_data
     labels:
@@ -311,12 +305,6 @@ services:
     restart: unless-stopped
     networks:
       - private_net
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:45876 -o /dev/null || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ../data/beszel/agent:/var/lib/beszel-agent
