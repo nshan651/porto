@@ -195,7 +195,7 @@ services:
       TRUSTED_PROXIES: traefik
     volumes:
       - ../data/nextcloud:/var/www/html
-      - /mnt/media/vault/pix:/pix:ro
+      - /mnt/media/ns/pix:/pix:ro
       - ../hooks/nextcloud-postinstall.sh:/docker-entrypoint-hooks.d/post-installation/nextcloud-postinstall.sh:ro
     depends_on:
       - nextcloud_db
@@ -269,7 +269,7 @@ services:
       - private_net
     volumes:
       - ../data/actual:/data
-      - /mnt/media/vault/personal-finance/data:/budget
+      - /mnt/media/ns/personal-finance/data:/budget
     environment:
       userFiles: "/budget"
     labels:
@@ -344,6 +344,46 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  aleph_restic:
+    image: mazzolino/restic
+    container_name: aleph_restic
+    restart: unless-stopped
+    networks:
+      - private_net
+    volumes:
+      - /mnt/media/ns:/files/ns:ro
+      - /mnt/media/vault/ns:/vault/ns
+    environment:
+      RESTIC_REPOSITORY: /vault/ns
+      RESTIC_PASSWORD: ${RESTIC_PASSWORD}
+      BACKUP_CRON: "0 4 * * *"
+      RUN_ON_STARTUP: "true"
+      RESTIC_BACKUP_SOURCES: /files/ns
+      RESTIC_BACKUP_ARGS: --tag vault
+      RESTIC_FORGET_ARGS: --keep-last 10 --keep-daily 7
+    healthcheck:
+      test: ["CMD-SHELL", "restic snapshots || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  restic_server:
+    image: restic/rest-server:latest
+    container_name: restic_server
+    restart: unless-stopped
+    networks:
+      - private_net
+    volumes:
+      - /mnt/media/vault/ns:/data
+    environment:
+      OPTIONS: --append-only --private-repos
+    labels:
+      - "traefik.enable=true"
+      - "traefik.scope=private"
+      - "traefik.http.routers.restic.rule=Host(`restic.${CONTROL_DOMAIN}`)"
+      - "traefik.http.routers.restic.entrypoints=websecure"
 
 networks:
   private_net:
