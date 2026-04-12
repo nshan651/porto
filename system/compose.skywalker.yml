@@ -351,11 +351,12 @@ services:
     restart: unless-stopped
     networks:
       - private_net
+    depends_on:
+      - restic_server
     volumes:
       - /mnt/media/ns:/files/ns:ro
-      - /mnt/media/vault/ns:/vault/ns
     environment:
-      RESTIC_REPOSITORY: /vault/ns
+      RESTIC_REPOSITORY: rest:http://restic_server:8000/ns
       RESTIC_PASSWORD: ${RESTIC_PASSWORD}
       BACKUP_CRON: "0 4 * * *"
       RUN_ON_STARTUP: "true"
@@ -376,9 +377,11 @@ services:
     networks:
       - private_net
     volumes:
-      - /mnt/media/vault/ns:/data
+      # - /mnt/media/vault/ns:/data
+      - /mnt/media/vault:/data
     environment:
-      OPTIONS: --append-only --private-repos --no-auth
+      # OPTIONS: --append-only --private-repos --no-auth
+      OPTIONS: --append-only --no-auth
     labels:
       - "traefik.enable=true"
       - "traefik.scope=private"
